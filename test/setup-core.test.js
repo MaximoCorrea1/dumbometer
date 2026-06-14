@@ -6,6 +6,12 @@ test('builds a quoted node command', () => {
   assert.equal(statusLineCommand('/abs/dir/statusline.js'), 'node "/abs/dir/statusline.js"');
 });
 
+test('normalizes Windows backslash paths to forward slashes', () => {
+  const bs = String.fromCharCode(92);
+  const winPath = `C:${bs}Projects VS${bs}dumb alert plugin${bs}statusline.js`;
+  assert.equal(statusLineCommand(winPath), 'node "C:/Projects VS/dumb alert plugin/statusline.js"');
+});
+
 test('applySetup adds statusLine, preserves other keys', () => {
   const next = applySetup({ theme: 'dark' }, 'node "x"');
   assert.deepEqual(next, { theme: 'dark', statusLine: { type: 'command', command: 'node "x"' } });
