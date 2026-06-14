@@ -40,3 +40,12 @@ test('clamps out-of-range percentage', () => {
   assert.equal(parse('{"context_window":{"used_percentage":150}}').usedPct, 100);
   assert.equal(parse('{"context_window":{"used_percentage":-5}}').usedPct, 0);
 });
+
+test('handles a real 1M-window payload, ignoring extra fields', () => {
+  // Captured live from an Opus 4.8 (1M context) session — confirms the real schema.
+  const r = parse(fx('real-1m.json'));
+  assert.equal(r.cold, false);
+  assert.equal(r.usedPct, 45);
+  assert.equal(r.windowSize, 1000000);
+  assert.equal(r.model, 'Opus 4.8 (1M context)');
+});
