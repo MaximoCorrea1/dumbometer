@@ -1,0 +1,2 @@
+{ "model": { "id": "claude-opus-4-8", "display_name": "Opus" },
+  "context_window": { "used_percentage": 20, "remaining_percentage": 80, "context_window_size": 200000 } }
