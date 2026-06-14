@@ -13,7 +13,19 @@ const settingsPath = join(homedir(), '.claude', 'settings.json');
 
 function readSettings(p) {
   if (!existsSync(p)) return {};
-  try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return {}; }
+  const raw = readFileSync(p, 'utf8');
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // File exists but is not valid JSON (e.g. JSONC with comments).
+    // Abort immediately — do NOT overwrite; data loss is unacceptable.
+    console.log(JSON.stringify({
+      ok: false,
+      error: 'existing settings.json is not valid JSON (comments/JSONC?); aborting to avoid data loss — fix or back it up, then retry',
+      path: p,
+    }));
+    process.exit(1);
+  }
 }
 
 const mode = process.argv[2] === 'remove' ? 'remove' : 'setup';
