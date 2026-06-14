@@ -6,6 +6,9 @@ export function parse(stdinText) {
   try { data = JSON.parse(stdinText); } catch { return cold; }
   if (!data || typeof data !== 'object') return cold;
 
+  // model and windowSize are part of the reading contract, reserved for potential
+  // future display (e.g. a richer status line); they are intentionally not consumed
+  // by the current renderer.
   const model = (data.model && (data.model.display_name || data.model.id)) || null;
   const cw = data.context_window;
   if (!cw || typeof cw !== 'object') return { ...cold, model };

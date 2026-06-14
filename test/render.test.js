@@ -27,3 +27,13 @@ test('narrow terminal drops the word, then the bar', () => {
   assert.equal(render(r, st('Dumb', 'red'), DEFAULTS, 20), '█████████░ 92%');
   assert.equal(render(r, st('Dumb', 'red'), DEFAULTS, 10), '92%');
 });
+
+test('cold at columns:80 still yields full placeholder', () => {
+  const out = render({ usedPct: 0, cold: true }, st('Smart', 'green'), DEFAULTS, 80);
+  assert.equal(out, 'Smart    ░░░░░░░░░░ …');
+});
+
+test('cold at columns:5 truncates to ellipsis', () => {
+  const out = render({ usedPct: 0, cold: true }, st('Smart', 'green'), DEFAULTS, 5);
+  assert.equal(out, '…');
+});

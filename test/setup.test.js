@@ -98,6 +98,61 @@ test('no existing file: creates settings.json with statusLine', () => {
   }
 });
 
+// Test 5: EISDIR — settings.json is a directory → structured abort
+test('SAFETY: settings.json is a directory (EISDIR) causes non-zero exit and prints ok:false JSON', () => {
+  const temp = makeTempHome();
+  try {
+    const sp = settingsPath(temp);
+    // Make settings.json a DIRECTORY so readFileSync throws EISDIR
+    mkdirSync(sp, { recursive: true });
+
+    const result = runSetup(temp);
+
+    assert.notEqual(
+      result.status,
+      0,
+      `Expected non-zero exit but got 0. stdout: ${result.stdout} stderr: ${result.stderr}`,
+    );
+
+    // Must print a JSON object with ok:false — no raw stack trace
+    let parsed;
+    try {
+      parsed = JSON.parse(result.stdout.trim());
+    } catch {
+      assert.fail(`stdout should be valid JSON; got: ${result.stdout}`);
+    }
+    assert.equal(parsed.ok, false, 'ok should be false');
+    assert.ok(typeof parsed.error === 'string' && parsed.error.length > 0, 'error field should be a non-empty string');
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+// Test 6: original backup is preserved across repeated runs
+test('backup: .bak preserves original settings across repeated runs', () => {
+  const temp = makeTempHome();
+  try {
+    const sp = settingsPath(temp);
+    // Write original settings and run setup
+    writeFileSync(sp, JSON.stringify({ theme: 'dark' }));
+    const first = runSetup(temp);
+    assert.equal(first.status, 0, `First run should exit 0; stderr: ${first.stderr}`);
+
+    // Now write DIFFERENT settings and run setup again
+    writeFileSync(sp, JSON.stringify({ theme: 'light', extra: true }));
+    const second = runSetup(temp);
+    assert.equal(second.status, 0, `Second run should exit 0; stderr: ${second.stderr}`);
+
+    // .bak should still contain the ORIGINAL settings (from before the first run)
+    const bakPath = sp + '.bak';
+    assert.ok(existsSync(bakPath), '.bak should exist');
+    const bak = JSON.parse(readFileSync(bakPath, 'utf8'));
+    assert.deepEqual(bak, { theme: 'dark' }, '.bak should still contain the original settings, not the second state');
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
 // Test 4 (SAFETY): unparseable existing settings → abort without writing
 test('SAFETY: unparseable existing settings.json (JSONC) causes non-zero exit and leaves file unchanged', () => {
   const temp = makeTempHome();

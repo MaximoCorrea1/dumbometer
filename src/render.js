@@ -9,7 +9,11 @@ export function render(reading, state, config, columns = 80) {
 
   if (reading.cold) {
     const word = config.labels.smart.padEnd(labelWidth);
-    return `${word} ${bar(0, config.width)} …`;
+    const full = `${word} ${bar(0, config.width)} …`;
+    if (full.length <= columns) return full;
+    const noWord = `${bar(0, config.width)} …`;
+    if (noWord.length <= columns) return noWord;
+    return '…';
   }
 
   const pct = Math.round(reading.usedPct);

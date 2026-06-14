@@ -26,3 +26,7 @@ test('applyRemove deletes statusLine, preserves other keys', () => {
   assert.deepEqual(applyRemove({ theme: 'dark', statusLine: { type: 'command', command: 'x' } }),
     { theme: 'dark' });
 });
+
+test('throws when path contains a double-quote', () => {
+  assert.throws(() => statusLineCommand('a' + String.fromCharCode(34) + 'b'));
+});

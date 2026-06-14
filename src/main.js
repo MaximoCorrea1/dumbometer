@@ -8,9 +8,11 @@ import { loadConfig } from './config.js';
 export function buildLine(stdinText, env = process.env) {
   const config = loadConfig(env);
   const reading = parse(stdinText);
-  const state = computeState(reading.usedPct, config);
-  const columns = parseInt(env.COLUMNS, 10) || 80;
-  const text = render(reading, state, config, columns);
+  const usedPct = Math.round(reading.usedPct);
+  const state = computeState(usedPct, config);
+  const parsedCols = parseInt(env.COLUMNS, 10);
+  const columns = Number.isInteger(parsedCols) && parsedCols > 0 ? parsedCols : 80;
+  const text = render({ ...reading, usedPct }, state, config, columns);
   return colorize(text, state.severity, config);
 }
 

@@ -49,3 +49,9 @@ test('handles a real 1M-window payload, ignoring extra fields', () => {
   assert.equal(r.windowSize, 1000000);
   assert.equal(r.model, 'Opus 4.8 (1M context)');
 });
+
+// Fix 7: model.id fallback when display_name absent
+test('uses model.id when display_name absent', () => {
+  const r = parse('{"model":{"id":"claude-3"},"context_window":{"used_percentage":50}}');
+  assert.equal(r.model, 'claude-3');
+});

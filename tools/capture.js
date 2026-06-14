@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 let data = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (c) => { data += c; });
+process.stdin.on('error', () => { process.stdout.write('capturing…'); });
 process.stdin.on('end', () => {
   try {
     const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'test', 'fixtures');
