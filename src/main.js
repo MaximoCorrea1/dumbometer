@@ -26,11 +26,16 @@ function readStdin() {
 }
 
 export async function main() {
+  process.stdout.on('error', () => {}); // EPIPE: reader closed the pipe → swallow, never crash
   let out = '';
   try {
     out = buildLine(await readStdin(), process.env);
   } catch {
-    out = ''; // unbreakable: never crash the status line
+    out = '';
   }
-  process.stdout.write(out);
+  try {
+    process.stdout.write(out);
+  } catch {
+    /* never crash the status line */
+  }
 }
