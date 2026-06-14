@@ -6,8 +6,12 @@
 
 ## Status
 
-**Phase:** Design complete and approved (2026-06-13).
-**Next:** implementation plan → build (test-first).
+**Phase:** Built and reviewed (v0.1.0) on branch `feat/status-line-gauge` — 39 tests
+passing, `claude plugin validate` clean, final whole-repo review passed.
+**Pending before publish:** run `tools/capture.js` once against a live Claude Code
+session to confirm the real `context_window.*` field names. They are currently
+doc-derived (two independent doc lookups agree); `parse()` degrades safely to a "cold"
+reading if a field name differs, so this is a usefulness check, not a stability risk.
 
 ## Decision log
 

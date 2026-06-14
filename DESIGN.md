@@ -72,7 +72,8 @@ Builds `"<word> <bar> <pct>%"`:
   (8 = "Slipping") so the bar never shifts horizontally as the word changes — no jitter.
 - **Width-adaptive:** if `$COLUMNS` is narrow, shrink the bar, then drop the word,
   then drop the bar — degrade gracefully down to just `NN%`.
-- **Cold state:** render a muted `Smart  …  0%` rather than a misleading full reading.
+- **Cold state:** render a muted `Smart    ░░░░░░░░░░ …` (full muted bar + ellipsis, no
+  number) rather than a misleading reading.
 
 ### `colorize(text, severity, config) → string`
 Wraps text in ANSI color for the severity (green/yellow/red). No color when
