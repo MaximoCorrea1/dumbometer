@@ -1,9 +1,11 @@
-// Pure: usedPct + config -> { label, severity }.
+// Pure: usedPct + config -> { label, color }.
 export function computeState(usedPct, config) {
-  const { thresholds, labels } = config;
   const pct = Math.max(0, Math.min(100, usedPct));
-  if (pct >= thresholds.dumb) return { label: labels.dumb, severity: 'red' };
-  if (pct >= thresholds.slipping) return { label: labels.slipping, severity: 'yellow' };
-  if (pct >= thresholds.warming) return { label: labels.warming, severity: 'green' };
-  return { label: labels.smart, severity: 'green' };
+  // Pick the LAST level whose min <= pct (highest matching level).
+  const { levels } = config;
+  let picked = levels[0];
+  for (let i = 1; i < levels.length; i++) {
+    if (pct >= levels[i].min) picked = levels[i];
+  }
+  return { label: picked.name, color: picked.color };
 }

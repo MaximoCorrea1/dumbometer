@@ -3,19 +3,20 @@
 A Claude Code status-line gauge showing Smart→Dumb as the context window fills.
 
 ```
-Slipping ████████░░ 79%
+Cooked   ████████░░ 79%
 ```
 
 ## What it shows
 
-The gauge maps context-window usage to four states:
+The gauge maps context-window usage to five states with a 256-color gradient:
 
-| % used | Label    | Color  |
-|--------|----------|--------|
-| 0–49   | Smart    | green  |
-| 50–69  | Warming  | green  |
-| 70–89  | Slipping | yellow |
-| 90–100 | Dumb     | red    |
+| % used | Label    | Color       |
+|--------|----------|-------------|
+| 0–24   | Smart    | bright green |
+| 25–49  | Coasting | green       |
+| 50–69  | Foggy    | yellow      |
+| 70–89  | Cooked   | orange      |
+| 90–100 | Dumb     | red         |
 
 Display-only — no interruptions, no popups. Zero token cost (the status-line command
 is not counted as context).
@@ -61,8 +62,8 @@ Zero-config by default. Override with environment variables (set inside the
 | Variable | Effect | Default |
 |---|---|---|
 | `DUMBOMETER_WIDTH` | Bar width in cells | `10` |
-| `DUMBOMETER_THRESHOLDS` | Comma-separated Warming,Slipping,Dumb start % | `50,70,90` |
-| `DUMBOMETER_LABELS` | Comma-separated label words | `Smart,Warming,Slipping,Dumb` |
+| `DUMBOMETER_THRESHOLDS` | 4 ascending ints (1–99): start % for Coasting,Foggy,Cooked,Dumb | `25,50,70,90` |
+| `DUMBOMETER_LABELS` | 5 comma-separated label words | `Smart,Coasting,Foggy,Cooked,Dumb` |
 | `DUMBOMETER_NO_COLOR` / `NO_COLOR` | Disable ANSI color | unset |
 
 ## Uninstall

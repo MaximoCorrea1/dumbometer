@@ -1,17 +1,21 @@
 // Pure config: defaults + environment overrides.
 export const DEFAULTS = {
   width: 10,
-  thresholds: { warming: 50, slipping: 70, dumb: 90 },
-  labels: { smart: 'Smart', warming: 'Warming', slipping: 'Slipping', dumb: 'Dumb' },
   color: true,
+  levels: [
+    { name: 'Smart',    min: 0,  color: 46  },
+    { name: 'Coasting', min: 25, color: 118 },
+    { name: 'Foggy',    min: 50, color: 226 },
+    { name: 'Cooked',   min: 70, color: 208 },
+    { name: 'Dumb',     min: 90, color: 196 },
+  ],
 };
 
 export function loadConfig(env = process.env) {
   const cfg = {
     width: DEFAULTS.width,
-    thresholds: { ...DEFAULTS.thresholds },
-    labels: { ...DEFAULTS.labels },
     color: DEFAULTS.color,
+    levels: DEFAULTS.levels.map((l) => ({ ...l })),
   };
 
   const w = parseInt(env.DUMBOMETER_WIDTH, 10);
@@ -19,16 +23,25 @@ export function loadConfig(env = process.env) {
 
   if (env.DUMBOMETER_THRESHOLDS) {
     const p = env.DUMBOMETER_THRESHOLDS.split(',').map((s) => parseInt(s.trim(), 10));
-    if (p.length === 3 && p.every((n) => Number.isInteger(n) && n >= 0 && n <= 100)
-        && p[0] < p[1] && p[1] < p[2]) {
-      cfg.thresholds = { warming: p[0], slipping: p[1], dumb: p[2] };
+    // Exactly 4 ints, each 1–99, strictly ascending
+    if (
+      p.length === 4 &&
+      p.every((n) => Number.isInteger(n) && n >= 1 && n <= 99) &&
+      p[0] < p[1] && p[1] < p[2] && p[2] < p[3]
+    ) {
+      // p[0..3] become min of levels 2–5; level 1 min stays 0
+      cfg.levels[1].min = p[0];
+      cfg.levels[2].min = p[1];
+      cfg.levels[3].min = p[2];
+      cfg.levels[4].min = p[3];
     }
   }
 
   if (env.DUMBOMETER_LABELS) {
     const p = env.DUMBOMETER_LABELS.split(',').map((s) => s.trim());
-    if (p.length === 4 && p.every((s) => s.length > 0)) {
-      cfg.labels = { smart: p[0], warming: p[1], slipping: p[2], dumb: p[3] };
+    // Exactly 5 non-empty names
+    if (p.length === 5 && p.every((s) => s.length > 0)) {
+      cfg.levels.forEach((lvl, i) => { lvl.name = p[i]; });
     }
   }
 

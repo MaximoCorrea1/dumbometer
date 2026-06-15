@@ -13,7 +13,7 @@ export function buildLine(stdinText, env = process.env) {
   const parsedCols = parseInt(env.COLUMNS, 10);
   const columns = Number.isInteger(parsedCols) && parsedCols > 0 ? parsedCols : 80;
   const text = render({ ...reading, usedPct }, state, config, columns);
-  return colorize(text, state.severity, config);
+  return colorize(text, state.color, config);
 }
 
 function readStdin() {

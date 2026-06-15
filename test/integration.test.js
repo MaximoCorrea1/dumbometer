@@ -11,7 +11,7 @@ const run = (input) => execFileSync('node', [join(root, 'statusline.js')],
 
 test('renders a line from a real-ish payload', () => {
   const out = run(readFileSync(join(root, 'test/fixtures/mid.json'), 'utf8'));
-  assert.match(out, /Warming/);
+  assert.match(out, /Foggy/);
   assert.match(out, /58%/);
 });
 

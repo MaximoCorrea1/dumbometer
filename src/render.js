@@ -5,10 +5,10 @@ function bar(usedPct, width) {
 }
 
 export function render(reading, state, config, columns = 80) {
-  const labelWidth = Math.max(...Object.values(config.labels).map((l) => l.length));
+  const labelWidth = Math.max(...config.levels.map((l) => l.name.length));
 
   if (reading.cold) {
-    const word = config.labels.smart.padEnd(labelWidth);
+    const word = config.levels[0].name.padEnd(labelWidth);
     const full = `${word} ${bar(0, config.width)} …`;
     if (full.length <= columns) return full;
     const noWord = `${bar(0, config.width)} …`;

@@ -24,6 +24,7 @@ locked in as a regression fixture (`test/fixtures/real-1m.json`).
 | 2026-06-13 | Scale = **Smart → Dumb** (morphing word) | Unambiguous (Dumb is clearly the bad end), dev-native, needs no decoding |
 | 2026-06-13 | **Pure ambient gauge**, no interruptions | Spend zero "intrusion budget"; user opts in by looking |
 | 2026-06-13 | **Node.js**, zero deps | `node` guaranteed present; built-in JSON; pure, testable core |
+| 2026-06-15 | **4→5 level ramp** Smart/Coasting/Foggy/Cooked/Dumb + 256-color gradient | More granular early-warning (Coasting at 25%), richer visual signal (bright green→green→yellow→orange→red via 256-color SGR), matches the landing |
 
 ## Platform facts — Claude Code status line
 

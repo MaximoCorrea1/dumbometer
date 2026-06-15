@@ -28,9 +28,9 @@ Alternatives considered and rejected:
 ```
 stdin JSON ─▶ parse() ─▶ {usedPct, windowSize, model, cold}
                               │
-                     computeState() ─▶ {label, severity}
+                     computeState() ─▶ {label, color}
                               │
-              render() + colorize() ─▶ "Slipping ████████░░ 79%" ─▶ stdout (exit 0)
+              render() + colorize() ─▶ "Cooked   ████████░░ 79%" ─▶ stdout (exit 0)
 ```
 
 ## Components
@@ -53,31 +53,32 @@ the first API response and immediately after `/compact`) → returns a neutral r
 (`usedPct: 0, cold: true`).
 
 ### `computeState(usedPct, config) → State`
-Maps % to `{ label, severity }`:
+Maps % to `{ label, color }`:
 
-| % used | label    | severity (color) |
-|--------|----------|------------------|
-| 0–49   | Smart    | green            |
-| 50–69  | Warming  | green            |
-| 70–89  | Slipping | yellow           |
-| 90–100 | Dumb     | red              |
+| % used | label    | 256-color code | color   |
+|--------|----------|----------------|---------|
+| 0–24   | Smart    | 46             | bright green |
+| 25–49  | Coasting | 118            | green   |
+| 50–69  | Foggy    | 226            | yellow  |
+| 70–89  | Cooked   | 208            | orange  |
+| 90–100 | Dumb     | 196            | red     |
 
-Pure; thresholds and labels come from config.
+Pure; levels (names, mins, color codes) come from `config.levels`.
 
 ### `render(reading, state, config, columns) → string`
 Builds `"<word> <bar> <pct>%"`:
 - Bar: `width` cells (default 10); filled = `round(usedPct/100 * width)` using
   `█` / `░`.
 - **Stable columns:** the word is right-padded to the widest label width
-  (8 = "Slipping") so the bar never shifts horizontally as the word changes — no jitter.
+  (8 = "Coasting") so the bar never shifts horizontally as the word changes — no jitter.
 - **Width-adaptive:** if `$COLUMNS` is narrow, shrink the bar, then drop the word,
   then drop the bar — degrade gracefully down to just `NN%`.
 - **Cold state:** render a muted `Smart    ░░░░░░░░░░ …` (full muted bar + ellipsis, no
   number) rather than a misleading reading.
 
-### `colorize(text, severity, config) → string`
-Wraps text in ANSI color for the severity (green/yellow/red). No color when
-`NO_COLOR` is set or `config.color === false`.
+### `colorize(text, color, config) → string`
+Wraps text in a 256-color ANSI SGR sequence (`ESC[38;5;<code>m…ESC[0m`). No color
+when `NO_COLOR` is set, `config.color === false`, or `color` is `null`/`undefined`.
 
 ### `main()`
 Glue: read stdin → parse → computeState → render → colorize → print. **Wrapped in a
@@ -93,8 +94,8 @@ Zero-config by default. Optional overrides via environment variables
 | Var | Effect | Default |
 |-----|--------|---------|
 | `DUMBOMETER_WIDTH` | bar cells | `10` |
-| `DUMBOMETER_THRESHOLDS` | Warming,Slipping,Dumb start % | `50,70,90` |
-| `DUMBOMETER_LABELS` | the four words | `Smart,Warming,Slipping,Dumb` |
+| `DUMBOMETER_THRESHOLDS` | 4 ascending ints (1–99): start % for Coasting,Foggy,Cooked,Dumb | `25,50,70,90` |
+| `DUMBOMETER_LABELS` | 5 comma-separated words (Smart through Dumb) | `Smart,Coasting,Foggy,Cooked,Dumb` |
 | `DUMBOMETER_NO_COLOR` / `NO_COLOR` | disable color | unset |
 
 No config file on the hot path (avoids file IO on every render).

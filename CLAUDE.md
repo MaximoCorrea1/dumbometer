@@ -6,8 +6,8 @@ Guidance for Claude working in this repo. See **VISION.md** (why), **DESIGN.md**
 ## What this is
 
 A Claude Code plugin: a status-line gauge that shows how close the current session is
-to "going dumb" as the context window fills (**Smart → Dumb**). One fast Node script,
-zero dependencies.
+to "going dumb" as the context window fills (**Smart → Coasting → Foggy → Cooked → Dumb**,
+256-color gradient). One fast Node script, zero dependencies.
 
 ## Hard rules
 
@@ -42,6 +42,6 @@ zero dependencies.
 
 ## Compact instructions
 
-If compacting a session about this project, preserve: the five locked decisions
-(CONTEXT.md decision log), the "never break the status line" rule, and the
-live-payload verification step.
+If compacting a session about this project, preserve: the locked decisions
+(CONTEXT.md decision log), the 5-level ramp (Smart/Coasting/Foggy/Cooked/Dumb),
+the "never break the status line" rule, and the live-payload verification step.
