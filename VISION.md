@@ -1,4 +1,4 @@
-# dumb-alert — Vision
+# Dumbometer — Vision
 
 ## The problem
 

@@ -1,7 +1,7 @@
 {
-  "name": "dumb-alert",
+  "name": "dumbometer",
   "version": "0.1.0",
-  "description": "A Claude Code status-line gauge that shows when a session is going dumb as context fills.",
+  "description": "A Claude Code status-line gauge (Dumbometer) that shows when a session is going dumb as context fills.",
   "type": "module",
   "scripts": { "test": "node --test" },
   "license": "MIT"

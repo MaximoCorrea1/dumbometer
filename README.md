@@ -1,4 +1,4 @@
-# dumb-alert
+# Dumbometer
 
 A Claude Code status-line gauge showing Smart→Dumb as the context window fills.
 
@@ -25,9 +25,9 @@ is not counted as context).
 **Marketplace (published):**
 
 ```
-/plugin marketplace add <repo>
-/plugin install dumb-alert
-/dumb-alert:setup
+/plugin marketplace add MaximoCorrea1/dumbometer
+/plugin install dumbometer
+/dumbometer:setup
 ```
 
 **Local dev:**
@@ -36,7 +36,7 @@ is not counted as context).
 claude --plugin-dir .
 ```
 
-Then run `/dumb-alert:setup` inside Claude Code. The command locates
+Then run `/dumbometer:setup` inside Claude Code. The command locates
 `~/.claude/settings.json`, backs it up to `settings.json.bak`, and inserts the
 status-line entry. Send one more message and the gauge appears.
 
@@ -60,14 +60,14 @@ Zero-config by default. Override with environment variables (set inside the
 
 | Variable | Effect | Default |
 |---|---|---|
-| `DUMB_ALERT_WIDTH` | Bar width in cells | `10` |
-| `DUMB_ALERT_THRESHOLDS` | Comma-separated Warming,Slipping,Dumb start % | `50,70,90` |
-| `DUMB_ALERT_LABELS` | Comma-separated label words | `Smart,Warming,Slipping,Dumb` |
-| `DUMB_ALERT_NO_COLOR` / `NO_COLOR` | Disable ANSI color | unset |
+| `DUMBOMETER_WIDTH` | Bar width in cells | `10` |
+| `DUMBOMETER_THRESHOLDS` | Comma-separated Warming,Slipping,Dumb start % | `50,70,90` |
+| `DUMBOMETER_LABELS` | Comma-separated label words | `Smart,Warming,Slipping,Dumb` |
+| `DUMBOMETER_NO_COLOR` / `NO_COLOR` | Disable ANSI color | unset |
 
 ## Uninstall
 
-Run `/dumb-alert:setup` and ask to remove, or restore the backup manually:
+Run `/dumbometer:setup` and ask to remove, or restore the backup manually:
 
 ```bash
 cp ~/.claude/settings.json.bak ~/.claude/settings.json

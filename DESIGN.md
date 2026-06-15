@@ -1,4 +1,4 @@
-# dumb-alert — Design
+# Dumbometer — Design
 
 > Technical specification. See **VISION.md** for *why*, **CONTEXT.md** for current
 > state and platform facts.
@@ -92,10 +92,10 @@ Zero-config by default. Optional overrides via environment variables
 
 | Var | Effect | Default |
 |-----|--------|---------|
-| `DUMB_ALERT_WIDTH` | bar cells | `10` |
-| `DUMB_ALERT_THRESHOLDS` | Warming,Slipping,Dumb start % | `50,70,90` |
-| `DUMB_ALERT_LABELS` | the four words | `Smart,Warming,Slipping,Dumb` |
-| `DUMB_ALERT_NO_COLOR` / `NO_COLOR` | disable color | unset |
+| `DUMBOMETER_WIDTH` | bar cells | `10` |
+| `DUMBOMETER_THRESHOLDS` | Warming,Slipping,Dumb start % | `50,70,90` |
+| `DUMBOMETER_LABELS` | the four words | `Smart,Warming,Slipping,Dumb` |
+| `DUMBOMETER_NO_COLOR` / `NO_COLOR` | disable color | unset |
 
 No config file on the hot path (avoids file IO on every render).
 
@@ -105,13 +105,13 @@ Claude Code plugins **cannot** auto-register a status line (only `agent` /
 `subagentStatusLine` are plugin-configurable today). So the plugin ships the script
 plus a setup command:
 
-- **`/dumb-alert:setup`** — locates `~/.claude/settings.json` (or project
+- **`/dumbometer:setup`** — locates `~/.claude/settings.json` (or project
   `.claude/settings.json`), backs it up, and inserts:
   ```json
   { "statusLine": { "type": "command", "command": "node \"<abs>/statusline.js\"" } }
   ```
   Detects an existing `statusLine` and asks before replacing.
-  `/dumb-alert:setup remove` restores the backup.
+  `/dumbometer:setup remove` restores the backup.
 - **Manual fallback:** the README documents the one-line snippet.
 
 ## Error handling & performance
@@ -141,7 +141,7 @@ plus a setup command:
 ├── statusline.js                # entry: stdin → stdout
 ├── src/{parse,state,render,config}.js
 ├── test/{fixtures/*.json, *.test.js}
-├── commands/setup.*             # /dumb-alert:setup
+├── commands/setup.*             # /dumbometer:setup
 ├── README.md
 └── VISION.md  DESIGN.md  CONTEXT.md  CLAUDE.md
 ```

@@ -12,7 +12,7 @@ const setupPath = join(here, '..', 'scripts', 'setup.mjs');
 
 // Each test gets its own isolated temp home dir so they don't interfere
 function makeTempHome() {
-  const dir = join(tmpdir(), 'dumb-alert-test-' + randomUUID());
+  const dir = join(tmpdir(), 'dumbometer-test-' + randomUUID());
   mkdirSync(join(dir, '.claude'), { recursive: true });
   return dir;
 }

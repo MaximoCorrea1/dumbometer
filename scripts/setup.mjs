@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Wire (or unwire) the dumb-alert status line into ~/.claude/settings.json.
+// Wire (or unwire) the dumbometer status line into ~/.claude/settings.json.
 // The pure transforms live in ../src/setup-core.js; this file is the thin IO layer.
 import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

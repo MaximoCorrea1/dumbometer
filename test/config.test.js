@@ -11,29 +11,29 @@ test('defaults when env is empty', () => {
 });
 
 test('valid width override', () => {
-  assert.equal(loadConfig({ DUMB_ALERT_WIDTH: '20' }).width, 20);
+  assert.equal(loadConfig({ DUMBOMETER_WIDTH: '20' }).width, 20);
 });
 
 test('invalid width falls back to default', () => {
-  assert.equal(loadConfig({ DUMB_ALERT_WIDTH: 'abc' }).width, 10);
-  assert.equal(loadConfig({ DUMB_ALERT_WIDTH: '0' }).width, 10);
+  assert.equal(loadConfig({ DUMBOMETER_WIDTH: 'abc' }).width, 10);
+  assert.equal(loadConfig({ DUMBOMETER_WIDTH: '0' }).width, 10);
 });
 
 test('valid thresholds override', () => {
-  assert.deepEqual(loadConfig({ DUMB_ALERT_THRESHOLDS: '40,60,80' }).thresholds,
+  assert.deepEqual(loadConfig({ DUMBOMETER_THRESHOLDS: '40,60,80' }).thresholds,
     { warming: 40, slipping: 60, dumb: 80 });
 });
 
 test('non-monotonic thresholds rejected', () => {
-  assert.deepEqual(loadConfig({ DUMB_ALERT_THRESHOLDS: '80,60,40' }).thresholds, DEFAULTS.thresholds);
+  assert.deepEqual(loadConfig({ DUMBOMETER_THRESHOLDS: '80,60,40' }).thresholds, DEFAULTS.thresholds);
 });
 
 test('labels override', () => {
-  assert.deepEqual(loadConfig({ DUMB_ALERT_LABELS: 'A,B,C,D' }).labels,
+  assert.deepEqual(loadConfig({ DUMBOMETER_LABELS: 'A,B,C,D' }).labels,
     { smart: 'A', warming: 'B', slipping: 'C', dumb: 'D' });
 });
 
 test('NO_COLOR disables color', () => {
   assert.equal(loadConfig({ NO_COLOR: '1' }).color, false);
-  assert.equal(loadConfig({ DUMB_ALERT_NO_COLOR: '' }).color, false);
+  assert.equal(loadConfig({ DUMBOMETER_NO_COLOR: '' }).color, false);
 });

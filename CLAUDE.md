@@ -1,4 +1,4 @@
-# CLAUDE.md — dumb-alert
+# CLAUDE.md — dumbometer
 
 Guidance for Claude working in this repo. See **VISION.md** (why), **DESIGN.md**
 (how), **CONTEXT.md** (state & decisions).
@@ -38,7 +38,7 @@ zero dependencies.
 ## Running it locally
 
 - Simulate a render: `echo '<fixture json>' | node statusline.js`
-- Install into Claude Code: `/dumb-alert:setup` (writes `statusLine` to settings.json).
+- Install into Claude Code: `/dumbometer:setup` (writes `statusLine` to settings.json).
 
 ## Compact instructions
 

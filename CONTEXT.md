@@ -1,4 +1,4 @@
-# dumb-alert — Context
+# Dumbometer — Context
 
 > Living document: current state, decisions, and platform facts. Keep it updated as
 > the project moves. (Fittingly, this is exactly the kind of durable context that
@@ -44,7 +44,7 @@ captures a live payload.**
 - Runs locally — **no token cost**. `$COLUMNS` / `$LINES` available (v2.1.153+).
   ANSI color supported.
 - **Plugins cannot register `statusLine`** — the user must wire `settings.json`
-  (hence `/dumb-alert:setup`).
+  (hence `/dumbometer:setup`).
 - No `PreCompact` / `PostCompact` hook; `SessionStart` / `SessionEnd` exist.
 
 ## Glossary
@@ -55,8 +55,6 @@ captures a live payload.**
 
 ## Open questions / parking lot
 
-- Final plugin **name** (`dumb-alert` is the working name; alternatives: `dumbometer`,
-  `dumbar`). "Alert" slightly implies notifications we deliberately don't do — revisit
-  before publishing.
+- Final plugin **name** resolved: `dumbometer` (renamed from `dumb-alert` for public launch).
 - Partial-block bar glyphs (`▏▎▍▌▋▊▉`) for smoother fill — optional polish, deferred.
 - Distribution (plugin marketplace vs. plain git) — decide at ship.

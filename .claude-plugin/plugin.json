@@ -1,8 +1,10 @@
 {
-  "name": "dumb-alert",
-  "displayName": "Dumb Alert",
+  "name": "dumbometer",
+  "displayName": "Dumbometer",
   "version": "0.1.0",
   "description": "A minimal status-line gauge that shows when your Claude Code session is going dumb (Smart -> Dumb) as the context window fills.",
+  "homepage": "https://github.com/MaximoCorrea1/dumbometer",
+  "repository": "https://github.com/MaximoCorrea1/dumbometer",
   "author": { "name": "Maximo Correa Rosas", "email": "maximocorrearosas@gmail.com" },
   "license": "MIT",
   "keywords": ["status-line", "context", "context-window", "monitoring", "dx"]
