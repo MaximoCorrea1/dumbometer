@@ -4,15 +4,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>dumbometer — a live meter for how dumb your AI is getting</title>
-<meta name="description" content="Your Claude Code agent gets measurably dumber the longer the chat runs. dumbometer is a tiny status-line meter that reads how full your context window is — green → red — so you /compact before it forgets your code. One file. Zero deps. Free, MIT." />
+<meta name="description" content="Your Claude Code agent gets measurably dumber the longer the chat runs. dumbometer is a tiny status-line meter that reads how full your context window is, right in your status bar, so you /compact before it forgets your code. Runs locally. Zero tokens. One file. Zero deps. Free, MIT." />
 <!-- social / viral cards -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="dumbometer — a live meter for how dumb your AI is getting" />
-<meta property="og:description" content="Your coding agent gets dumber as the context fills. dumbometer puts a meter in your status line — green to red — so you /compact in time. Free · MIT · zero deps · never crashes." />
+<meta property="og:description" content="Your coding agent gets dumber as the context fills. dumbometer adds a live meter to your Claude Code status line so you /compact in time. Runs locally · zero tokens · Free · MIT · zero deps · never crashes." />
 <meta property="og:url" content="https://github.com/MaximoCorrea1/dumbometer" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="dumbometer — a live meter for how dumb your AI is getting" />
-<meta name="twitter:description" content="Your coding agent gets dumber as the context fills. dumbometer is a tiny status-line meter that shows it — green to red — so you /compact in time." />
+<meta name="twitter:description" content="Your coding agent gets dumber as the context fills. dumbometer adds a live meter to your Claude Code status line so you /compact in time. Runs locally, zero tokens." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -22,7 +22,7 @@
     --line:#f3f1e9;
     /* 5-level ramp: smart -> dumb */
     --smart:#5dff57; --coasting:#9be34a; --foggy:#ffd23f; --cooked:#ff7a1e; --dumb:#ff2e2e;
-    --acid:#c6ff3a; --hazard:#ffd23f;
+    --acid:#c6ff3a;
     --shadow: 8px 8px 0 0 var(--ink);
     --maxw:1120px;
   }
@@ -43,11 +43,6 @@
   a{color:inherit}
   .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
   .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
-  .hazard{
-    height:26px; width:100%;
-    background:repeating-linear-gradient(45deg, var(--hazard) 0 22px, #0a0b0d 22px 44px);
-    border-top:3px solid var(--ink); border-bottom:3px solid var(--ink);
-  }
 
   /* === SEGMENTED METER (CSS cells — no text blocks) === */
   .meter{
@@ -97,7 +92,12 @@
   }
   .meterbox .chrome{display:flex; gap:7px; margin-bottom:16px}
   .meterbox .chrome i{width:13px;height:13px;border-radius:50%;border:2px solid #fff3;background:#222;display:block}
-  .statusline{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:clamp(17px,3.2vw,30px); letter-spacing:.01em; display:flex; align-items:center; gap:.65ch}
+  .statusline{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:clamp(14px,2.6vw,24px); letter-spacing:.01em; display:flex; align-items:center; gap:1.1ch; flex-wrap:nowrap; min-width:0}
+  /* the cwd + git-branch context — dim, so the meter reads as the part dumbometer adds */
+  .sl-ctx{color:#6f716b; font-weight:500; white-space:nowrap; display:flex; align-items:center; gap:1.1ch; flex:0 0 auto}
+  .sl-ctx .branch{color:#8a8c86}
+  .sl-ctx .branch::before{content:"⎇ "; opacity:.8}
+  .sl-meta{display:flex; align-items:center; gap:.65ch; flex:1 1 auto; min-width:0}
   #word{min-width:6.5ch; display:inline-block; white-space:nowrap}
   #pct{margin-left:.3ch; min-width:4ch; text-align:right}
   #skull{opacity:0; transition:opacity .2s; margin-left:-.2ch}
@@ -115,8 +115,24 @@
   .badges{margin-top:20px; font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--dim)}
   .badges span{color:var(--ink)}
 
-  /* SECTIONS */
-  section{padding:60px 0; border-top:3px solid var(--ink)}
+  /* ZERO-TOKENS — the unmissable callout */
+  .zerotok{
+    margin:26px 0 4px; background:#0c1a0c; border:3px solid var(--smart);
+    box-shadow:8px 8px 0 var(--smart); padding:18px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .zerotok .zt-badge{
+    font-family:"JetBrains Mono",monospace; font-weight:700; font-size:clamp(20px,3.4vw,30px);
+    color:#03210a; background:var(--smart); border:2px solid var(--ink); padding:6px 12px;
+    letter-spacing:-.01em; white-space:nowrap; transform:rotate(-1.5deg); flex:0 0 auto;
+  }
+  .zerotok .zt-txt{font-size:clamp(15px,2vw,19px); color:#dfffda; font-weight:600; flex:1 1 240px; min-width:0}
+  .zerotok .zt-txt b{color:var(--smart)}
+
+  /* SECTIONS — calm whitespace, no heavy dividers */
+  section{padding:72px 0}
+  /* a very subtle hairline only where a section truly needs delineation */
+  section.hair{border-top:1px solid #ffffff14}
   .kicker{font-family:"JetBrains Mono",monospace; color:var(--dumb); font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.1em}
   h2{font-weight:800; text-transform:uppercase; letter-spacing:-.02em; line-height:.96; font-size:clamp(30px,5vw,60px); margin:.2em 0 .5em}
   .lead{color:var(--dim); max-width:660px; font-size:17px; margin-top:-8px}
@@ -125,9 +141,11 @@
   /* "what it looks like" examples */
   .examples{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:26px}
   .ex{border:3px solid var(--ink); background:#000; padding:16px 16px 18px; box-shadow:5px 5px 0 var(--ink)}
-  .ex .row{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:15px; display:flex; align-items:center; gap:.6ch}
-  .ex .row .nm{min-width:6.5ch; white-space:nowrap}
-  .ex .row .pc{margin-left:auto; min-width:4ch; text-align:right}
+  .ex .exline{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:15px; display:flex; align-items:center; gap:.7ch}
+  .ex .exline .exctx{color:#6f716b; font-weight:500; white-space:nowrap; flex:0 0 auto}
+  .ex .exline .nm{white-space:nowrap; flex:0 0 auto}
+  .ex .exline .pc{margin-left:auto; min-width:4ch; text-align:right}
+  .ex .exline .meter.mini{flex:1 1 auto; min-width:24px}
   .ex .cap{font-family:"JetBrains Mono",monospace; font-size:11px; color:#6f716b; margin-top:10px}
   .ex-note{font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--dim); margin-top:18px}
   .ex-note b{color:var(--acid)}
@@ -151,6 +169,12 @@
   .how div{border-left:5px solid var(--acid); padding:6px 0 6px 18px}
   .how h3{font-family:"JetBrains Mono",monospace; font-size:17px; margin:0 0 6px}
   .how p{margin:0; color:var(--dim); font-size:15px}
+  /* why it works */
+  .why{max-width:720px; margin-top:8px}
+  .why p{font-size:clamp(16px,2.1vw,19px); color:#d9dbd3; margin:0 0 16px; line-height:1.55}
+  .why p:last-child{margin-bottom:0}
+  .why b{color:var(--ink)}
+  .why code{font-family:"JetBrains Mono",monospace; color:var(--acid); background:#000; border:1px solid #ffffff25; padding:1px 5px; font-size:.85em}
 
   /* pricing — 3 tiers, Free is the hero */
   .tiers{display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:16px; margin-top:30px; align-items:stretch}
@@ -162,7 +186,7 @@
   .tier ul{list-style:none; padding:0; margin:14px 0 0; font-size:13.5px; color:var(--ink); flex:1}
   .tier li{padding:7px 0; border-top:1px dashed #ffffff22; line-height:1.35}
   .tier li .em{font-family:"JetBrains Mono",monospace}
-  .tier .foot{font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--dim); margin-top:16px; border-top:2px solid var(--ink); padding-top:12px; line-height:1.5}
+  .tier .foot{font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--dim); margin-top:16px; border-top:1px solid #ffffff1f; padding-top:12px; line-height:1.5}
   /* the hero free tier */
   .tier.free{background:#0c1a0c; border-color:var(--smart); box-shadow:8px 8px 0 var(--smart)}
   .tier.free .tn{color:var(--smart)}
@@ -171,11 +195,20 @@
   .tier.free li{border-top-color:#5dff5733}
   .tier.tip{background:#160c12}
   .tier.joke{background:#16100c}
+  /* per-tier CTA buttons */
+  .tier .tcta{display:block; text-align:center; text-decoration:none; font-family:"JetBrains Mono",monospace; font-weight:700; font-size:14px; padding:12px 14px; border:2.5px solid var(--ink); margin-top:16px; background:var(--ink); color:#0a0b0d; transition:transform .08s, box-shadow .08s; cursor:pointer; line-height:1.3}
+  .tier .tcta:hover{transform:translate(-2px,-2px)}
+  .tier.free .tcta{background:var(--smart); color:#03210a; font-size:16px; box-shadow:4px 4px 0 #03210a}
+  .tier.free .tcta:hover{box-shadow:6px 6px 0 #03210a}
+  .tier.tip .tcta{background:#ff7adf; color:#1a0011; box-shadow:4px 4px 0 var(--ink)}
+  .tier.tip .tcta:hover{box-shadow:6px 6px 0 var(--ink)}
+  .tier.joke .tcta{background:transparent; color:var(--dim); border-color:#ffffff33; box-shadow:none; font-size:13px}
+  .tier.joke .tcta:hover{transform:none; color:var(--ink); border-color:var(--ink)}
   .freechip{position:absolute; top:-15px; right:-10px; background:var(--smart); color:#03210a; font-family:"JetBrains Mono",monospace; font-weight:700; font-size:12px; padding:5px 9px; border:2px solid var(--ink); transform:rotate(4deg); box-shadow:2px 2px 0 #03210a}
   .oncechip{font-family:"JetBrains Mono",monospace; font-size:10px; font-weight:700; color:#0a0b0d; background:var(--acid); padding:2px 6px; border:1.5px solid var(--ink); margin-left:8px; vertical-align:middle; text-transform:uppercase; letter-spacing:.04em}
 
   /* footer */
-  footer{border-top:3px solid var(--ink); padding:48px 0 60px; text-align:center}
+  footer{border-top:1px solid #ffffff14; padding:64px 0 60px; text-align:center}
   footer .big{font-weight:800; text-transform:uppercase; font-size:clamp(28px,6vw,60px); line-height:.95; letter-spacing:-.02em}
   footer .score{font-family:"JetBrains Mono",monospace; color:var(--dim); margin-top:18px; font-size:15px}
   footer .score b{color:var(--dumb)}
@@ -218,19 +251,27 @@
 <header class="hero wrap">
   <span class="eyebrow mono">⚠ context rot detected</span>
   <h1>Your AI gets<br><span class="red">dumber</span> the<br>longer you chat.</h1>
-  <p class="sub">dumbometer is a tiny meter in your Claude Code status line. It reads how full your context window is and shows it <b>green → red</b>, so you <code>/compact</code> before your agent starts forgetting your code. One file. Zero dependencies. Free.</p>
+  <p class="sub">dumbometer is a tiny meter in your Claude Code status line. It reads how full your context window is so you <code>/compact</code> before your agent starts forgetting your code. One file. Zero dependencies. Free.</p>
 
   <div class="meterbox" id="meterbox" role="img" tabindex="0"
-       aria-label="Live demo of the dumbometer status line, a meter climbing from Smart to Dumb. Click to max it out.">
+       aria-label="Live demo of a Claude Code status line. The cwd and git branch are normal status-line text; dumbometer adds the meter that climbs from Smart to Dumb. Click to max it out.">
     <div class="chrome"><i></i><i></i><i></i></div>
     <div class="statusline">
-      <span id="word" style="color:var(--smart)">Smart</span>
-      <div class="meter hero-meter" id="bar" style="--mc:var(--smart)" aria-hidden="true"></div>
-      <span id="pct" style="color:var(--smart)">0%</span>
-      <span id="skull">💀</span>
+      <span class="sl-ctx"><span class="cwd">~/my-app</span><span class="branch">main</span></span>
+      <span class="sl-meta">
+        <span id="word" style="color:var(--smart)">Smart</span>
+        <div class="meter hero-meter" id="bar" style="--mc:var(--smart)" aria-hidden="true"></div>
+        <span id="pct" style="color:var(--smart)">0%</span>
+        <span id="skull">💀</span>
+      </span>
     </div>
     <div class="ticker mono" id="ticker">› idle — feed me a 4-hour refactor</div>
-    <div class="hint mono">↑ click the meter to send it straight to Dumb</div>
+    <div class="hint mono">this is your Claude Code status line — dumbometer adds the last bit (the meter). ↑ click it to spike to Dumb.</div>
+  </div>
+
+  <div class="zerotok" role="note">
+    <span class="zt-badge">ZERO TOKENS</span>
+    <p class="zt-txt"><b>Runs locally on your machine.</b> It reads a number Claude Code already computed — it never calls the model. It will never cost you a cent or a single token of context.</p>
   </div>
 
   <div class="cta">
@@ -243,23 +284,21 @@
   <div class="badges mono">free · <span>MIT</span> · zero deps · <span>0 tokens</span> · never crashes</div>
 </header>
 
-<div class="hazard" role="presentation"></div>
-
 <section class="wrap reveal">
   <span class="kicker">what it looks like</span>
   <h2>It's a meter. In your status bar.</h2>
-  <p class="lead">Three real readouts, same as you'll see live. The bar fills and changes color as your context window fills up.</p>
+  <p class="lead">Three real status-line readouts, same as you'll see live. The dim <code>~/dir</code> and <code>⎇ branch</code> are your normal status line — dumbometer adds the meter that fills and changes color as your context window fills up.</p>
   <div class="examples">
     <div class="ex">
-      <div class="row"><span class="nm" style="color:var(--smart)">Smart</span><div class="meter mini" data-pct="22" style="--mc:var(--smart)"></div><span class="pc" style="color:var(--smart)">22%</span></div>
+      <div class="exline"><span class="exctx">~/api  ⎇ main</span><span class="nm" style="color:var(--smart)">Smart</span><div class="meter mini" data-pct="22" style="--mc:var(--smart)"></div><span class="pc" style="color:var(--smart)">22%</span></div>
       <div class="cap">plenty of room. it's sharp.</div>
     </div>
     <div class="ex">
-      <div class="row"><span class="nm" style="color:var(--foggy)">Foggy</span><div class="meter mini" data-pct="61" style="--mc:var(--foggy)"></div><span class="pc" style="color:var(--foggy)">61%</span></div>
+      <div class="exline"><span class="exctx">~/web  ⎇ fix/auth</span><span class="nm" style="color:var(--foggy)">Foggy</span><div class="meter mini" data-pct="61" style="--mc:var(--foggy)"></div><span class="pc" style="color:var(--foggy)">61%</span></div>
       <div class="cap">starting to lose the thread.</div>
     </div>
     <div class="ex">
-      <div class="row"><span class="nm" style="color:var(--dumb)">Dumb 💀</span><div class="meter mini" data-pct="96" style="--mc:var(--dumb)"></div><span class="pc" style="color:var(--dumb)">96%</span></div>
+      <div class="exline"><span class="exctx">~/core  ⎇ main</span><span class="nm" style="color:var(--dumb)">Dumb 💀</span><div class="meter mini" data-pct="96" style="--mc:var(--dumb)"></div><span class="pc" style="color:var(--dumb)">96%</span></div>
       <div class="cap">/compact now or accept chaos.</div>
     </div>
   </div>
@@ -278,7 +317,7 @@
 <section class="wrap reveal">
   <span class="kicker">the readout</span>
   <h2>Five states. One glance.</h2>
-  <p class="lead">There's no "accuracy" sensor — so dumbometer measures the <i>cause</i>: how full the context window is. Empty = sharp. Full = mush. It ramps <code>green → red</code> as you go.</p>
+  <p class="lead">There's no "accuracy" sensor — so dumbometer measures the <i>cause</i>: how full the context window is. Empty = sharp. Full = mush. The meter climbs the five levels as you go.</p>
   <div class="states" style="margin-top:26px">
     <div class="state"><div class="nm" style="color:var(--smart)">Smart</div><div class="rg">0–24%</div><div class="row"><div class="meter mini" data-pct="14" style="--mc:var(--smart)"></div><span class="pc" style="color:var(--smart)">14%</span></div></div>
     <div class="state"><div class="nm" style="color:var(--coasting)">Coasting</div><div class="rg">25–49%</div><div class="row"><div class="meter mini" data-pct="37" style="--mc:var(--coasting)"></div><span class="pc" style="color:var(--coasting)">37%</span></div></div>
@@ -290,17 +329,26 @@
 
 <section class="wrap reveal">
   <span class="kicker">how it works</span>
-  <h2>Boringly robust.</h2>
+  <h2>How it works.</h2>
+  <p class="lead">Three things, and that's the whole story.</p>
   <div class="how">
-    <div><h3>// reads the real number</h3><p>Pulls the actual context-window % straight from Claude Code's status-line data. No guessing, no transcript scraping.</p></div>
-    <div><h3>// zero dependencies</h3><p>One small Node script. Nothing to install, nothing to break. Runs locally on every render — costs you zero tokens.</p></div>
-    <div><h3>// physically cannot crash</h3><p>Every failure path falls back to safe output and exits clean. It will never garble your status line. (We have tests. 52 of them.)</p></div>
+    <div><h3>// reads your % locally</h3><p>Pulls the actual context-window percentage straight from Claude Code's status-line data, on your machine. No guessing, no transcript scraping, no network call.</p></div>
+    <div><h3>// zero tokens</h3><p>It reads a number Claude Code already computed — it never calls the model. Runs locally on every render. It will never cost you a cent or a single token of context.</p></div>
+    <div><h3>// never crashes</h3><p>Every failure path falls back to safe output and exits clean. It will never garble your status line. (We have tests. 52 of them.)</p></div>
   </div>
 </section>
 
-<div class="hazard" role="presentation"></div>
-
 <section class="wrap reveal">
+  <span class="kicker">why it works</span>
+  <h2>Why a fill meter tells you anything.</h2>
+  <p class="lead">It's not a gimmick — it's measuring the actual cause of the dumbness.</p>
+  <div class="why">
+    <p><b>Context rot.</b> As the context window fills, the model has more and more to hold in its head — and it starts losing track of earlier details: the function it wrote, the bug you already fixed, the convention you agreed on twenty messages ago. Quality degrades <i>before</i> you notice it in the output.</p>
+    <p>You can't feel that coming. But the fill level <b>is</b> the warning sign — it climbs in plain sight, and it climbs <i>before</i> the answers go bad. dumbometer just puts that number where you'll actually see it, so <code>/compact</code> stops being a guess.</p>
+  </div>
+</section>
+
+<section class="wrap reveal hair" id="install">
   <span class="kicker">install</span>
   <h2>30 seconds. Then forget about it.</h2>
   <div class="install" style="max-width:620px">
@@ -322,11 +370,12 @@
       <div class="tp">$0<small> /forever</small></div>
       <ul>
         <li>The meter — live in your status line.</li>
-        <li>All 5 states + the full green → red color ramp.</li>
+        <li>All 5 states, from Smart to Dumb.</li>
         <li>Reads your real context-window %.</li>
-        <li>Zero dependencies. Never crashes.</li>
+        <li>Runs locally · zero tokens · never crashes.</li>
         <li>MIT licensed. No account, no telemetry.</li>
       </ul>
+      <a class="tcta" href="#install">Install free →</a>
       <div class="foot">this is everything. you want this one.</div>
     </div>
 
@@ -342,6 +391,7 @@
         <li>🔤 Custom labels — rename "Dumb" to your boss's name.</li>
         <li>🔔 A little sound when you hit Dumb.</li>
       </ul>
+      <a class="tcta" href="https://github.com/MaximoCorrea1/dumbometer">Coming soon — ⭐ star to get notified</a>
       <div class="foot">a tip jar with perks. you do NOT need it. but it's nine bucks and you'll smile.</div>
     </div>
 
@@ -354,6 +404,7 @@
         <li>We physically tap your shoulder the moment your context window fills.</li>
         <li>Weighted blanket included.</li>
       </ul>
+      <a class="tcta" href="mailto:maximocorrearosas@gmail.com?subject=Singularity%20tier%20(%241M)&body=I%20would%20like%20to%20discuss%20the%20%241M%20Singularity%20tier.">Contact sales 😉</a>
       <div class="foot">we will not be doing this. it's a joke. please buy the free one.</div>
     </div>
   </div>
