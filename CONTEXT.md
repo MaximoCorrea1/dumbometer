@@ -7,7 +7,7 @@
 ## Status
 
 **Phase:** Built, reviewed, and **schema-verified** (v0.1.0) on branch
-`feat/status-line-gauge` — 40 tests passing, `claude plugin validate` clean, final
+`feat/status-line-gauge` — 64 tests passing, `claude plugin validate` clean, final
 whole-repo review passed.
 **Schema verified (2026-06-14):** captured a live status-line payload from a 1M-window
 Opus 4.8 session; the real field names match exactly — `context_window` provides
