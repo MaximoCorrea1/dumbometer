@@ -26,6 +26,7 @@ to "going dumb" as the context window fills (**Smart → Coasting → Foggy → 
 - Pure logic in `src/`; `statusline.js` is a thin entry that wires stdin → `main` →
   stdout.
 - Match the surrounding file style; keep files small and single-purpose.
+- `docs/solutions/` — documented solutions to past problems (best practices, platform gotchas, workflow patterns), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`). Relevant when implementing or debugging in documented areas.
 
 ## Testing
 
