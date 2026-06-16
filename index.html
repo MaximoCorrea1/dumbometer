@@ -3,241 +3,657 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>dumbometer — a live meter for how dumb your AI is getting</title>
-<meta name="description" content="Your Claude Code agent gets measurably dumber the longer the chat runs. dumbometer is a tiny status-line meter that reads how full your context window is, right in your status bar, so you /compact before it forgets your code. Runs locally. Zero tokens. One file. Zero deps. Free, MIT." />
-<!-- social / viral cards -->
+<title>dumbometer — a live meter for Claude Code</title>
+<meta name="description" content="dumbometer adds a live context-window meter to your Claude Code status line. See how full your AI's context is at a glance, so you /compact before it forgets your code. Free · MIT · zero tokens · never crashes." />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="dumbometer — a live meter for how dumb your AI is getting" />
-<meta property="og:description" content="Your coding agent gets dumber as the context fills. dumbometer adds a live meter to your Claude Code status line so you /compact in time. Runs locally · zero tokens · Free · MIT · zero deps · never crashes." />
+<meta property="og:title" content="dumbometer — know when your AI gets dumb" />
+<meta property="og:description" content="A live meter in your Claude Code status line that shows how full your context window is — so you /compact before your agent forgets your code. Free · MIT · zero tokens." />
 <meta property="og:url" content="https://github.com/MaximoCorrea1/dumbometer" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="dumbometer — a live meter for how dumb your AI is getting" />
-<meta name="twitter:description" content="Your coding agent gets dumber as the context fills. dumbometer adds a live meter to your Claude Code status line so you /compact in time. Runs locally, zero tokens." />
+<meta name="twitter:title" content="dumbometer — know when your AI gets dumb" />
+<meta name="twitter:description" content="A live meter in your Claude Code status line. Free · MIT · zero tokens · never crashes." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <style>
-  :root{
-    --bg:#0a0b0d; --panel:#101216; --ink:#f3f1e9; --dim:#9a9c96;
-    --line:#f3f1e9;
-    /* 5-level ramp: smart -> dumb */
-    --smart:#5dff57; --coasting:#9be34a; --foggy:#ffd23f; --cooked:#ff7a1e; --dumb:#ff2e2e;
-    --acid:#c6ff3a;
-    --shadow: 8px 8px 0 0 var(--ink);
-    --maxw:1120px;
+  :root {
+    --bg: #0a0b0d;
+    --panel: #101216;
+    --ink: #f3f1e9;
+    --dim: #9a9c96;
+    --line: #ffffff14;
+    --smart: #5dff57;
+    --coasting: #9be34a;
+    --foggy: #ffd23f;
+    --cooked: #ff7a1e;
+    --dumb: #ff2e2e;
+    --acid: #c6ff3a;
+    --shadow: 6px 6px 0 0 var(--ink);
+    --maxw: 1120px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;
-    font-weight:600; line-height:1.45; -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
-  }
-  /* film grain + scanlines overlay */
-  body::before{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.05;
-    background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
-    mix-blend-mode:overlay;
-  }
-  a{color:inherit}
-  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
-  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
 
-  /* === SEGMENTED METER (CSS cells — no text blocks) === */
-  .meter{
-    display:flex; gap:3px; flex:1 1 auto; min-width:0;
-    --mc:var(--smart);            /* current level color, set inline/JS */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
+    font-weight: 600;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
-  .meter .cell{
-    flex:1 1 0; min-width:0;
-    border:1.5px solid #ffffff20;
-    background:transparent;
-    border-radius:2px;
-    transition:background .18s ease, border-color .18s ease, box-shadow .18s ease;
+  /* film grain overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: .04;
+    background-image: repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay;
   }
-  .meter .cell.fill{
-    background:var(--mc);
-    border-color:var(--mc);
-    box-shadow:0 0 7px -1px var(--mc), inset 0 0 4px #ffffff35;
+  a { color: inherit; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  /* === SEGMENTED METER === */
+  .meter {
+    display: flex;
+    gap: 3px;
+    flex: 1 1 auto;
+    min-width: 0;
+    --mc: var(--smart);
   }
-  /* hero meter is the boss health bar — taller cells */
-  .meter.hero-meter{ height:30px; gap:4px; }
-  .meter.hero-meter .cell{ border-width:2px; border-radius:3px; }
-  /* mini meters in cards / examples */
-  .meter.mini{ height:20px; gap:2px; }
-  .meter.mini .cell{ border-radius:2px; }
+  .meter .cell {
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1.5px solid #ffffff20;
+    background: transparent;
+    border-radius: 2px;
+    transition:
+      background 220ms var(--ease-out),
+      border-color 220ms var(--ease-out),
+      box-shadow 220ms var(--ease-out);
+  }
+  .meter .cell.fill {
+    background: var(--mc);
+    border-color: var(--mc);
+    box-shadow: 0 0 6px -1px var(--mc), inset 0 0 3px #ffffff30;
+  }
+  .meter.hero-meter { height: 28px; gap: 4px; }
+  .meter.hero-meter .cell { border-width: 2px; border-radius: 3px; }
+  .meter.mini { height: 18px; gap: 2px; }
+  .meter.mini .cell { border-radius: 2px; }
+  .meter.session { height: 22px; gap: 3px; }
 
   /* NAV */
-  nav{display:flex; align-items:center; justify-content:space-between; padding:18px 24px; max-width:var(--maxw); margin:0 auto}
-  .brand{font-weight:800; font-size:22px; letter-spacing:-.02em; display:flex; align-items:center; gap:10px}
-  .brand .dot{width:14px;height:14px;background:var(--smart);border:2px solid var(--ink);border-radius:50%;box-shadow:0 0 12px var(--smart)}
-  .navlink{font-family:"JetBrains Mono",monospace; font-size:13px; text-decoration:none; border:2px solid var(--ink); padding:8px 14px; background:var(--ink); color:var(--bg); font-weight:700; box-shadow:3px 3px 0 var(--acid); transition:transform .08s, box-shadow .08s}
-  .navlink:hover{transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--acid)}
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    max-width: var(--maxw);
+    margin: 0 auto;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand .dot {
+    width: 12px; height: 12px;
+    background: var(--smart);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--smart);
+  }
+  .navlink {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    text-decoration: none;
+    border: 2px solid var(--ink);
+    padding: 7px 13px;
+    background: var(--ink);
+    color: var(--bg);
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--acid);
+    transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  }
+  .navlink:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--acid); }
+  .navlink:active { transform: scale(0.97); }
 
   /* HERO */
-  header.hero{padding:54px 0 40px; position:relative}
-  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--bg); background:var(--dumb); display:inline-block; padding:5px 10px; border:2px solid var(--ink); font-weight:700; transform:rotate(-1.5deg)}
-  h1{font-weight:800; letter-spacing:-.03em; line-height:.94; margin:.35em 0 .25em; font-size:clamp(40px, 8vw, 104px); text-transform:uppercase}
-  h1 .red{color:var(--dumb); text-shadow:4px 4px 0 #00000060}
-  .sub{font-size:clamp(17px,2.2vw,22px); max-width:660px; color:var(--ink); font-weight:600}
-  .sub b{background:var(--acid); color:#0a0b0d; padding:0 6px}
-  .sub code{font-family:"JetBrains Mono",monospace; background:#000; border:1px solid #ffffff30; color:var(--acid); padding:1px 6px; font-size:.82em}
+  header.hero { padding: 48px 0 36px; }
 
-  /* the METER (hero centerpiece) */
-  .meterbox{
-    margin:32px 0 8px; background:#000; border:3px solid var(--ink);
-    box-shadow:var(--shadow); padding:24px 26px 20px; position:relative; overflow:hidden;
-    cursor:pointer; user-select:none;
+  /* stagger entrance animation targets */
+  .hero-eyebrow,
+  .hero-h1,
+  .hero-sub,
+  .hero-meterbox,
+  .hero-cta,
+  .hero-trust {
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 350ms var(--ease-out),
+      transform 350ms var(--ease-out);
   }
-  .meterbox .chrome{display:flex; gap:7px; margin-bottom:16px}
-  .meterbox .chrome i{width:13px;height:13px;border-radius:50%;border:2px solid #fff3;background:#222;display:block}
-  .statusline{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:clamp(14px,2.6vw,24px); letter-spacing:.01em; display:flex; align-items:center; gap:1.1ch; flex-wrap:nowrap; min-width:0}
-  /* the cwd + git-branch context — dim, so the meter reads as the part dumbometer adds */
-  .sl-ctx{color:#6f716b; font-weight:500; white-space:nowrap; display:flex; align-items:center; gap:1.1ch; flex:0 0 auto}
-  .sl-ctx .branch{color:#8a8c86}
-  .sl-ctx .branch::before{content:"⎇ "; opacity:.8}
-  .sl-meta{display:flex; align-items:center; gap:.65ch; flex:1 1 auto; min-width:0}
-  #word{min-width:6.5ch; display:inline-block; white-space:nowrap}
-  #pct{margin-left:.3ch; min-width:4ch; text-align:right}
-  #skull{opacity:0; transition:opacity .2s; margin-left:-.2ch}
-  .meterbox .hint{font-family:"JetBrains Mono",monospace; font-size:11px; color:#6f716b; margin-top:13px}
-  .ticker{font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--dim); margin-top:6px; min-height:18px}
-  .ticker b{color:var(--acid)}
+  body[data-mounted] .hero-eyebrow { opacity: 1; transform: none; transition-delay: 0ms; }
+  body[data-mounted] .hero-h1     { opacity: 1; transform: none; transition-delay: 50ms; }
+  body[data-mounted] .hero-sub    { opacity: 1; transform: none; transition-delay: 100ms; }
+  body[data-mounted] .hero-meterbox { opacity: 1; transform: none; transition-delay: 150ms; }
+  body[data-mounted] .hero-cta    { opacity: 1; transform: none; transition-delay: 200ms; }
+  body[data-mounted] .hero-trust  { opacity: 1; transform: none; transition-delay: 250ms; }
 
-  .cta{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin-top:26px}
-  .install{font-family:"JetBrains Mono",monospace; background:#000; border:3px solid var(--ink); padding:14px 16px; display:flex; align-items:center; gap:14px; box-shadow:var(--shadow); font-size:14px; font-weight:500}
-  .install code{color:var(--acid); white-space:nowrap}
-  .copybtn{font-family:"JetBrains Mono",monospace; cursor:pointer; border:2px solid var(--ink); background:var(--ink); color:#000; font-weight:700; padding:6px 10px; font-size:12px}
-  .copybtn:active{transform:translateY(1px)}
-  .ghbtn{font-family:"JetBrains Mono",monospace; text-decoration:none; font-weight:700; font-size:16px; background:var(--acid); color:#0a0b0d; border:3px solid var(--ink); padding:14px 22px; box-shadow:var(--shadow); transition:transform .08s, box-shadow .08s}
-  .ghbtn:hover{transform:translate(-3px,-3px); box-shadow:11px 11px 0 0 var(--ink)}
-  .badges{margin-top:20px; font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--dim)}
-  .badges span{color:var(--ink)}
+  /* hero content column */
+  .hero-col { max-width: 720px; }
 
-  /* ZERO-TOKENS — the unmissable callout */
-  .zerotok{
-    margin:26px 0 4px; background:#0c1a0c; border:3px solid var(--smart);
-    box-shadow:8px 8px 0 var(--smart); padding:18px 22px;
-    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: var(--dim);
+    display: inline-block;
+    letter-spacing: .08em;
+    text-transform: lowercase;
+    margin-bottom: 20px;
   }
-  .zerotok .zt-badge{
-    font-family:"JetBrains Mono",monospace; font-weight:700; font-size:clamp(20px,3.4vw,30px);
-    color:#03210a; background:var(--smart); border:2px solid var(--ink); padding:6px 12px;
-    letter-spacing:-.01em; white-space:nowrap; transform:rotate(-1.5deg); flex:0 0 auto;
-  }
-  .zerotok .zt-txt{font-size:clamp(15px,2vw,19px); color:#dfffda; font-weight:600; flex:1 1 240px; min-width:0}
-  .zerotok .zt-txt b{color:var(--smart)}
 
-  /* SECTIONS — calm whitespace, no heavy dividers */
-  section{padding:72px 0}
-  /* a very subtle hairline only where a section truly needs delineation */
-  section.hair{border-top:1px solid #ffffff14}
-  .kicker{font-family:"JetBrains Mono",monospace; color:var(--dumb); font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.1em}
-  h2{font-weight:800; text-transform:uppercase; letter-spacing:-.02em; line-height:.96; font-size:clamp(30px,5vw,60px); margin:.2em 0 .5em}
-  .lead{color:var(--dim); max-width:660px; font-size:17px; margin-top:-8px}
-  .lead code{font-family:"JetBrains Mono",monospace; color:var(--acid); background:#000; border:1px solid #ffffff25; padding:1px 5px; font-size:.85em}
+  h1 {
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: .94;
+    font-size: clamp(40px, 7.5vw, 88px);
+  }
+  .hero-sub-text {
+    font-size: clamp(16px, 1.9vw, 19px);
+    max-width: 620px;
+    color: #c5c7bf;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-top: 18px;
+  }
+  .hero-sub-text code {
+    font-family: "JetBrains Mono", monospace;
+    background: #000;
+    border: 1px solid #ffffff30;
+    color: var(--acid);
+    padding: 1px 5px;
+    font-size: .85em;
+  }
+
+  /* METERBOX — hero product proof */
+  .meterbox {
+    margin: 36px 0 0;
+    background: #000;
+    border: 2px solid #ffffff22;
+    padding: 20px 24px 18px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    max-width: 680px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px #ffffff08, 0 4px 32px #00000060;
+    transition: border-color 200ms var(--ease-out);
+  }
+  .meterbox:hover { border-color: #ffffff40; }
+  .meterbox .chrome { display: flex; gap: 6px; margin-bottom: 16px; }
+  .meterbox .chrome i {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    display: block;
+    border: 1px solid #ffffff15;
+  }
+  .statusline {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: clamp(14px, 2.4vw, 21px);
+    letter-spacing: .01em;
+    display: flex;
+    align-items: center;
+    gap: 1.1ch;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+  .sl-ctx {
+    color: #4e5049;
+    font-weight: 500;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 1.1ch;
+    flex: 0 0 auto;
+  }
+  .sl-ctx .branch { color: #5a5d57; }
+  .sl-ctx .branch::before { content: "⎇ "; opacity: .8; }
+  .sl-meta {
+    display: flex;
+    align-items: center;
+    gap: .65ch;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #word { min-width: 6.5ch; display: inline-block; white-space: nowrap; }
+  #pct { margin-left: .3ch; min-width: 4ch; text-align: right; }
+  #skull { opacity: 0; transition: opacity 200ms var(--ease-out); margin-left: -.2ch; }
+  .meterbox .hint {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: #444740;
+    margin-top: 12px;
+    letter-spacing: .02em;
+  }
+  .ticker {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: #555851;
+    margin-top: 5px;
+    min-height: 16px;
+  }
+  .ticker b { color: var(--acid); }
+
+  /* CTA row */
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .btn-primary {
+    font-family: "JetBrains Mono", monospace;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    background: var(--ink);
+    color: var(--bg);
+    border: 2px solid var(--ink);
+    padding: 13px 22px;
+    display: inline-block;
+    transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out);
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-ghost {
+    font-family: "JetBrains Mono", monospace;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--dim);
+    border: 1.5px solid #ffffff20;
+    padding: 12px 18px;
+    display: inline-block;
+    transition: transform 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+  }
+  .btn-ghost:hover { color: var(--ink); border-color: #ffffff50; }
+  .btn-ghost:active { transform: scale(0.97); }
+
+  .trust-line {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: #555851;
+    margin-top: 16px;
+    letter-spacing: .04em;
+  }
+
+  /* SECTIONS */
+  section { padding: 96px 0; }
+  section.tight { padding: 72px 0; }
+  section + section { border-top: 1px solid var(--line); }
+
+  .section-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: block;
+  }
+  h2 {
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: .96;
+    font-size: clamp(26px, 4vw, 46px);
+    margin-bottom: 16px;
+  }
+  .lead {
+    color: var(--dim);
+    max-width: 640px;
+    font-size: 16px;
+    line-height: 1.65;
+    margin-top: 6px;
+  }
+  .lead code {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--acid);
+    background: #000;
+    border: 1px solid #ffffff25;
+    padding: 1px 5px;
+    font-size: .85em;
+  }
 
   /* "what it looks like" examples */
-  .examples{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:26px}
-  .ex{border:3px solid var(--ink); background:#000; padding:16px 16px 18px; box-shadow:5px 5px 0 var(--ink)}
-  .ex .exline{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:15px; display:flex; align-items:center; gap:.7ch}
-  .ex .exline .exctx{color:#6f716b; font-weight:500; white-space:nowrap; flex:0 0 auto}
-  .ex .exline .nm{white-space:nowrap; flex:0 0 auto}
-  .ex .exline .pc{margin-left:auto; min-width:4ch; text-align:right}
-  .ex .exline .meter.mini{flex:1 1 auto; min-width:24px}
-  .ex .cap{font-family:"JetBrains Mono",monospace; font-size:11px; color:#6f716b; margin-top:10px}
-  .ex-note{font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--dim); margin-top:18px}
-  .ex-note b{color:var(--acid)}
+  .examples { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 32px; }
+  .ex {
+    border: 1.5px solid #ffffff18;
+    background: #000;
+    padding: 16px 16px 18px;
+    border-radius: 3px;
+  }
+  .ex .exline {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: .7ch;
+  }
+  .ex .exctx { color: #3d4039; font-weight: 500; white-space: nowrap; flex: 0 0 auto; font-size: 12px; }
+  .ex .nm { white-space: nowrap; flex: 0 0 auto; }
+  .ex .pc { margin-left: auto; min-width: 4ch; text-align: right; }
+  .ex .exline .meter.mini { flex: 1 1 auto; min-width: 24px; }
+  .ex .cap { font-family: "JetBrains Mono", monospace; font-size: 11px; color: #555851; margin-top: 10px; }
 
-  /* problem: one tight line, a little humor */
-  .rot{border:3px solid var(--ink); background:#1a0c0c; padding:24px 26px; box-shadow:var(--shadow); margin-top:6px}
-  .rot p{margin:0; font-size:clamp(18px,2.4vw,24px); color:#ffd9d9; font-weight:600}
-  .rot p b{background:var(--dumb); color:#1a0000; padding:0 6px}
-  .rot .sig{font-family:"JetBrains Mono",monospace; font-size:13px; color:#c98a8a; margin-top:14px}
+  /* session strip */
+  .session-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 32px;
+    max-width: 720px;
+    background: #000;
+    border: 1.5px solid #ffffff18;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .session-step {
+    display: flex;
+    align-items: center;
+    gap: 1.2ch;
+    padding: 12px 18px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    font-weight: 700;
+    border-bottom: 1px solid #ffffff0a;
+  }
+  .session-step:last-child { border-bottom: none; }
+  .session-step.compact-step {
+    background: #0a0e0a;
+    border-top: 1px solid #5dff5720;
+    border-bottom: none;
+  }
+  .ss-ctx { color: #3d4039; font-size: 12px; font-weight: 500; white-space: nowrap; flex: 0 0 auto; }
+  .ss-label { white-space: nowrap; flex: 0 0 auto; min-width: 9ch; }
+  .ss-meter { flex: 1 1 auto; min-width: 0; }
+  .ss-pct { min-width: 4ch; text-align: right; flex: 0 0 auto; }
+  .ss-note { color: #555851; font-size: 11px; flex: 0 0 auto; margin-left: .5ch; }
 
-  /* states */
-  .states{display:grid; grid-template-columns:repeat(5,1fr); gap:14px}
-  .state{border:3px solid var(--ink); padding:16px; background:var(--panel); box-shadow:5px 5px 0 var(--ink)}
-  .state .nm{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:18px}
-  .state .rg{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--dim); margin:2px 0 12px}
-  .state .row{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:13px; display:flex; align-items:center; gap:.5ch}
-  .state .row .pc{margin-left:auto}
+  /* problem */
+  .rot-block {
+    border: 1.5px solid #ffffff18;
+    background: #0f0808;
+    padding: 28px 30px;
+    border-radius: 3px;
+    margin-top: 24px;
+    max-width: 680px;
+  }
+  .rot-block p { font-size: clamp(16px, 2vw, 20px); color: #e8d5d5; font-weight: 600; line-height: 1.6; }
+  .rot-block .sig {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: #8a6a6a;
+    margin-top: 16px;
+  }
+  .rot-block .sig b { color: var(--acid); }
 
-  /* how */
-  .how{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
-  .how div{border-left:5px solid var(--acid); padding:6px 0 6px 18px}
-  .how h3{font-family:"JetBrains Mono",monospace; font-size:17px; margin:0 0 6px}
-  .how p{margin:0; color:var(--dim); font-size:15px}
-  /* why it works */
-  .why{max-width:720px; margin-top:8px}
-  .why p{font-size:clamp(16px,2.1vw,19px); color:#d9dbd3; margin:0 0 16px; line-height:1.55}
-  .why p:last-child{margin-bottom:0}
-  .why b{color:var(--ink)}
-  .why code{font-family:"JetBrains Mono",monospace; color:var(--acid); background:#000; border:1px solid #ffffff25; padding:1px 5px; font-size:.85em}
+  /* five states */
+  .states { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 28px; }
+  .state {
+    border: 1.5px solid #ffffff18;
+    padding: 14px;
+    background: var(--panel);
+    border-radius: 3px;
+  }
+  .state .nm { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 16px; }
+  .state .rg { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--dim); margin: 3px 0 12px; }
+  .state .row { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: .5ch; }
+  .state .row .pc { margin-left: auto; }
 
-  /* pricing — 3 tiers, Free is the hero */
-  .tiers{display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:16px; margin-top:30px; align-items:stretch}
-  .tier{border:3px solid var(--ink); background:var(--panel); padding:20px; display:flex; flex-direction:column; box-shadow:5px 5px 0 var(--ink); position:relative}
-  .tier .tn{font-family:"JetBrains Mono",monospace; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:.03em}
-  .tier .tagline{font-size:14px; color:var(--dim); margin-top:3px}
-  .tier .tp{font-weight:800; font-size:30px; margin:12px 0 2px; letter-spacing:-.02em}
-  .tier .tp small{font-size:13px; color:var(--dim); font-weight:600}
-  .tier ul{list-style:none; padding:0; margin:14px 0 0; font-size:13.5px; color:var(--ink); flex:1}
-  .tier li{padding:7px 0; border-top:1px dashed #ffffff22; line-height:1.35}
-  .tier li .em{font-family:"JetBrains Mono",monospace}
-  .tier .foot{font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--dim); margin-top:16px; border-top:1px solid #ffffff1f; padding-top:12px; line-height:1.5}
-  /* the hero free tier */
-  .tier.free{background:#0c1a0c; border-color:var(--smart); box-shadow:8px 8px 0 var(--smart)}
-  .tier.free .tn{color:var(--smart)}
-  .tier.free .tp{font-size:38px}
-  .tier.free .foot{color:var(--smart); border-top-color:var(--smart)}
-  .tier.free li{border-top-color:#5dff5733}
-  .tier.tip{background:#160c12}
-  .tier.joke{background:#16100c}
-  /* per-tier CTA buttons */
-  .tier .tcta{display:block; text-align:center; text-decoration:none; font-family:"JetBrains Mono",monospace; font-weight:700; font-size:14px; padding:12px 14px; border:2.5px solid var(--ink); margin-top:16px; background:var(--ink); color:#0a0b0d; transition:transform .08s, box-shadow .08s; cursor:pointer; line-height:1.3}
-  .tier .tcta:hover{transform:translate(-2px,-2px)}
-  .tier.free .tcta{background:var(--smart); color:#03210a; font-size:16px; box-shadow:4px 4px 0 #03210a}
-  .tier.free .tcta:hover{box-shadow:6px 6px 0 #03210a}
-  .tier.tip .tcta{background:#ff7adf; color:#1a0011; box-shadow:4px 4px 0 var(--ink)}
-  .tier.tip .tcta:hover{box-shadow:6px 6px 0 var(--ink)}
-  .tier.joke .tcta{background:transparent; color:var(--dim); border-color:#ffffff33; box-shadow:none; font-size:13px}
-  .tier.joke .tcta:hover{transform:none; color:var(--ink); border-color:var(--ink)}
-  .freechip{position:absolute; top:-15px; right:-10px; background:var(--smart); color:#03210a; font-family:"JetBrains Mono",monospace; font-weight:700; font-size:12px; padding:5px 9px; border:2px solid var(--ink); transform:rotate(4deg); box-shadow:2px 2px 0 #03210a}
-  .oncechip{font-family:"JetBrains Mono",monospace; font-size:10px; font-weight:700; color:#0a0b0d; background:var(--acid); padding:2px 6px; border:1.5px solid var(--ink); margin-left:8px; vertical-align:middle; text-transform:uppercase; letter-spacing:.04em}
+  /* how it works */
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 32px; }
+  .how-item { border-left: 3px solid #ffffff20; padding: 4px 0 4px 20px; }
+  .how-item h3 { font-family: "JetBrains Mono", monospace; font-size: 14px; margin-bottom: 8px; color: var(--ink); }
+  .how-item p { color: var(--dim); font-size: 14px; line-height: 1.65; }
+
+  /* zero tokens callout — once, clean */
+  .zerotok-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    background: #091209;
+    border: 1.5px solid #5dff5730;
+    border-radius: 3px;
+    padding: 20px 24px;
+    margin-top: 28px;
+    max-width: 680px;
+  }
+  .zt-badge {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--smart);
+    background: #0d200d;
+    border: 1.5px solid #5dff5740;
+    padding: 5px 10px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    border-radius: 2px;
+  }
+  .zt-txt { font-size: 15px; color: #b8d9b4; font-weight: 600; line-height: 1.6; }
+
+  /* install section */
+  .install-block {
+    background: #000;
+    border: 1.5px solid #ffffff18;
+    border-radius: 3px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    max-width: 620px;
+    margin-top: 28px;
+  }
+  .install-block code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    color: var(--acid);
+    flex: 1;
+    line-height: 1.7;
+    white-space: pre;
+  }
+  .copybtn {
+    font-family: "JetBrains Mono", monospace;
+    cursor: pointer;
+    border: 1.5px solid #ffffff30;
+    background: transparent;
+    color: var(--dim);
+    font-weight: 700;
+    padding: 5px 10px;
+    font-size: 11px;
+    flex: 0 0 auto;
+    transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+    border-radius: 2px;
+  }
+  .copybtn:hover { color: var(--ink); border-color: var(--ink); }
+  .copybtn:active { transform: scale(0.97); }
+
+  /* PRICING */
+  .tiers { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; margin-top: 32px; align-items: stretch; }
+  .tier {
+    border: 1.5px solid #ffffff18;
+    background: var(--panel);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 3px;
+    position: relative;
+  }
+  .tier .tn { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 13px; letter-spacing: .03em; }
+  .tier .tagline { font-size: 13px; color: var(--dim); margin-top: 3px; }
+  .tier .tp { font-weight: 800; font-size: 28px; margin: 12px 0 2px; letter-spacing: -.02em; }
+  .tier .tp small { font-size: 13px; color: var(--dim); font-weight: 600; }
+  .tier ul { list-style: none; margin: 14px 0 0; font-size: 13px; color: #c5c7bf; flex: 1; }
+  .tier li { padding: 7px 0; border-top: 1px solid #ffffff12; line-height: 1.4; }
+  .tier .foot { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--dim); margin-top: 14px; border-top: 1px solid #ffffff12; padding-top: 12px; line-height: 1.5; }
+  .tier.free { background: #091209; border-color: #5dff5730; }
+  .tier.free .tn { color: var(--smart); }
+  .tier.free .tp { font-size: 36px; }
+  .tier.free .foot { color: var(--smart); border-top-color: #5dff5730; }
+  .tier.free li { border-top-color: #5dff5720; }
+  .tier.tip { background: #110a10; }
+  .tier.joke { background: #10100a; }
+  .freechip {
+    position: absolute;
+    top: -12px; right: -8px;
+    background: var(--smart);
+    color: #03210a;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 4px 8px;
+    border: 1.5px solid var(--ink);
+    transform: rotate(4deg);
+    border-radius: 2px;
+  }
+  .tier .tcta {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 11px 14px;
+    border: 1.5px solid #ffffff20;
+    margin-top: 16px;
+    background: transparent;
+    color: var(--dim);
+    transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out), border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+    cursor: pointer;
+    border-radius: 2px;
+    line-height: 1.3;
+  }
+  .tier .tcta:hover { color: var(--ink); border-color: #ffffff50; }
+  .tier .tcta:active { transform: scale(0.97); }
+  .tier.free .tcta {
+    background: var(--smart);
+    color: #03210a;
+    border-color: var(--smart);
+    font-size: 15px;
+    padding: 13px 14px;
+  }
+  .tier.free .tcta:hover { opacity: .88; }
+  .oncechip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: #0a0b0d;
+    background: var(--acid);
+    padding: 2px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    border-radius: 2px;
+  }
 
   /* footer */
-  footer{border-top:1px solid #ffffff14; padding:64px 0 60px; text-align:center}
-  footer .big{font-weight:800; text-transform:uppercase; font-size:clamp(28px,6vw,60px); line-height:.95; letter-spacing:-.02em}
-  footer .score{font-family:"JetBrains Mono",monospace; color:var(--dim); margin-top:18px; font-size:15px}
-  footer .score b{color:var(--dumb)}
-  footer .links{margin-top:22px; font-family:"JetBrains Mono",monospace; font-size:14px; display:flex; gap:18px; justify-content:center; flex-wrap:wrap}
-  footer .links a{border-bottom:2px solid var(--acid); text-decoration:none; padding-bottom:2px}
-
-  .reveal{opacity:0; transform:translateY(18px); transition:opacity .5s ease, transform .5s ease}
-  .reveal.in{opacity:1; transform:none}
-
-  @media (max-width:860px){
-    .examples{grid-template-columns:1fr}
-    .states{grid-template-columns:1fr 1fr}
-    .how{grid-template-columns:1fr}
-    .tiers{grid-template-columns:1fr}
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 80px 0 72px;
+    text-align: center;
   }
-  @media (max-width:520px){
-    .states{grid-template-columns:1fr}
-    .install{flex-direction:column; align-items:flex-start}
-    .install code{white-space:normal; overflow-wrap:anywhere}
-    h1{font-size:34px}
-    h2{font-size:22px; white-space:normal}
-    h1,h2,footer .big{overflow-wrap:break-word; word-break:break-word; hyphens:auto}
-    footer .big{font-size:28px}
-    .wrap{padding:0 18px}
-    .statusline{font-size:17px}
+  footer .big {
+    font-weight: 800;
+    font-size: clamp(28px, 5.5vw, 56px);
+    line-height: .96;
+    letter-spacing: -.025em;
   }
-  @media (prefers-reduced-motion:reduce){
-    .reveal{opacity:1; transform:none; transition:none}
-    .meter .cell{transition:none}
+  footer .score {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--dim);
+    margin-top: 20px;
+    font-size: 13px;
+  }
+  footer .score b { color: var(--dumb); }
+  footer .links {
+    margin-top: 22px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  footer .links a {
+    border-bottom: 1px solid var(--acid);
+    text-decoration: none;
+    padding-bottom: 2px;
+    color: var(--dim);
+    transition: color 160ms var(--ease-out);
+  }
+  footer .links a:hover { color: var(--ink); }
+
+  /* scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 480ms var(--ease-out),
+      transform 480ms var(--ease-out);
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-eyebrow, .hero-h1, .hero-sub, .hero-meterbox, .hero-cta, .hero-trust {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .meter .cell { transition: none; }
+    #skull { transition: none; }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 860px) {
+    .examples { grid-template-columns: 1fr; }
+    .states { grid-template-columns: 1fr 1fr; }
+    .how { grid-template-columns: 1fr; }
+    .tiers { grid-template-columns: 1fr; }
+    .session-step { flex-wrap: wrap; }
+    .ss-note { width: 100%; margin-left: 0; padding-left: calc(9ch + 1.2ch); }
+  }
+  @media (max-width: 520px) {
+    .states { grid-template-columns: 1fr; }
+    h1 { font-size: clamp(34px, 10vw, 56px); }
+    h2 { font-size: clamp(22px, 7vw, 32px); word-break: break-word; hyphens: auto; }
+    footer .big { font-size: 28px; word-break: break-word; hyphens: auto; overflow-wrap: break-word; }
+    .wrap { padding: 0 18px; }
+    .statusline { font-size: 16px; }
+    .install-block { flex-direction: column; }
+    .install-block code { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .meterbox { max-width: 100%; }
+    .session-strip { max-width: 100%; }
+    .zerotok-block { flex-direction: column; max-width: 100%; }
+    section { padding: 64px 0; }
   }
 </style>
 </head>
@@ -249,76 +665,111 @@
 </nav>
 
 <header class="hero wrap">
-  <span class="eyebrow mono">⚠ context rot detected</span>
-  <h1>Your AI gets<br><span class="red">dumber</span> the<br>longer you chat.</h1>
-  <p class="sub">dumbometer is a tiny meter in your Claude Code status line. It reads how full your context window is so you <code>/compact</code> before your agent starts forgetting your code. One file. Zero dependencies. Free.</p>
-
-  <div class="meterbox" id="meterbox" role="img" tabindex="0"
-       aria-label="Live demo of a Claude Code status line. The cwd and git branch are normal status-line text; dumbometer adds the meter that climbs from Smart to Dumb. Click to max it out.">
-    <div class="chrome"><i></i><i></i><i></i></div>
-    <div class="statusline">
-      <span class="sl-ctx"><span class="cwd">~/my-app</span><span class="branch">main</span></span>
-      <span class="sl-meta">
-        <span id="word" style="color:var(--smart)">Smart</span>
-        <div class="meter hero-meter" id="bar" style="--mc:var(--smart)" aria-hidden="true"></div>
-        <span id="pct" style="color:var(--smart)">0%</span>
-        <span id="skull">💀</span>
-      </span>
+  <div class="hero-col">
+    <div class="hero-eyebrow">
+      <span class="eyebrow mono">a meter for Claude Code</span>
     </div>
-    <div class="ticker mono" id="ticker">› idle — feed me a 4-hour refactor</div>
-    <div class="hint mono">this is your Claude Code status line — dumbometer adds the last bit (the meter). ↑ click it to spike to Dumb.</div>
-  </div>
 
-  <div class="zerotok" role="note">
-    <span class="zt-badge">ZERO TOKENS</span>
-    <p class="zt-txt"><b>Runs locally on your machine.</b> It reads a number Claude Code already computed — it never calls the model. It will never cost you a cent or a single token of context.</p>
-  </div>
+    <div class="hero-h1">
+      <h1>Know when your AI gets dumb.</h1>
+    </div>
 
-  <div class="cta">
-    <a class="ghbtn" href="https://github.com/MaximoCorrea1/dumbometer">Get it free →</a>
-    <div class="install">
-      <code id="cmd">/plugin marketplace add MaximoCorrea1/dumbometer</code>
-      <button class="copybtn" id="copy" aria-label="Copy install command">COPY</button>
+    <div class="hero-sub">
+      <p class="hero-sub-text">
+        A live meter in your Claude Code status line that shows how full your context window is —
+        so you <code>/compact</code> before your agent forgets your code.
+      </p>
+    </div>
+
+    <div class="hero-meterbox">
+      <div class="meterbox" id="meterbox" role="img" tabindex="0"
+           aria-label="Live demo of a Claude Code status line. dumbometer adds the meter showing context fill. Click to spike to Dumb.">
+        <div class="chrome"><i></i><i></i><i></i></div>
+        <div class="statusline">
+          <span class="sl-ctx"><span class="cwd">~/my-app</span><span class="branch">main</span></span>
+          <span class="sl-meta">
+            <span id="word" style="color:var(--cooked)">Cooked</span>
+            <div class="meter hero-meter" id="bar" style="--mc:var(--cooked)" aria-hidden="true"></div>
+            <span id="pct" style="color:var(--cooked)">78%</span>
+            <span id="skull">💀</span>
+          </span>
+        </div>
+        <div class="ticker mono" id="ticker">› idle — feed me a 4-hour refactor</div>
+        <div class="hint mono">↑ click to spike. that's the meter dumbometer adds to your status line.</div>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <div class="cta-row">
+        <a class="btn-primary" href="#install">Install free →</a>
+        <a class="btn-ghost" href="https://github.com/MaximoCorrea1/dumbometer">★ GitHub →</a>
+      </div>
+    </div>
+
+    <div class="hero-trust">
+      <p class="trust-line mono">free · MIT · zero tokens · 64 tests · never crashes</p>
     </div>
   </div>
-  <div class="badges mono">free · <span>MIT</span> · zero deps · <span>0 tokens</span> · never crashes</div>
 </header>
 
 <section class="wrap reveal">
-  <span class="kicker">what it looks like</span>
-  <h2>It's a meter. In your status bar.</h2>
-  <p class="lead">Three real status-line readouts, same as you'll see live. The dim <code>~/dir</code> and <code>⎇ branch</code> are your normal status line — dumbometer adds the meter that fills and changes color as your context window fills up.</p>
-  <div class="examples">
-    <div class="ex">
-      <div class="exline"><span class="exctx">~/api  ⎇ main</span><span class="nm" style="color:var(--smart)">Smart</span><div class="meter mini" data-pct="22" style="--mc:var(--smart)"></div><span class="pc" style="color:var(--smart)">22%</span></div>
-      <div class="cap">plenty of room. it's sharp.</div>
+  <span class="section-label">a real session</span>
+  <h2>What it looks like over time.</h2>
+  <p class="lead">A typical coding session. The meter climbs in your status line — you see it coming before the answers go bad.</p>
+
+  <div class="session-strip">
+    <div class="session-step">
+      <span class="ss-ctx">~/my-app ⎇ main</span>
+      <span class="ss-label" style="color:var(--smart)">Smart</span>
+      <div class="meter session ss-meter" data-pct="12" style="--mc:var(--smart)"></div>
+      <span class="ss-pct" style="color:var(--smart)">12%</span>
+      <span class="ss-note">fresh context. agent is sharp.</span>
     </div>
-    <div class="ex">
-      <div class="exline"><span class="exctx">~/web  ⎇ fix/auth</span><span class="nm" style="color:var(--foggy)">Foggy</span><div class="meter mini" data-pct="61" style="--mc:var(--foggy)"></div><span class="pc" style="color:var(--foggy)">61%</span></div>
-      <div class="cap">starting to lose the thread.</div>
+    <div class="session-step">
+      <span class="ss-ctx">~/my-app ⎇ main</span>
+      <span class="ss-label" style="color:var(--coasting)">Coasting</span>
+      <div class="meter session ss-meter" data-pct="45" style="--mc:var(--coasting)"></div>
+      <span class="ss-pct" style="color:var(--coasting)">45%</span>
+      <span class="ss-note">still solid. keep going.</span>
     </div>
-    <div class="ex">
-      <div class="exline"><span class="exctx">~/core  ⎇ main</span><span class="nm" style="color:var(--dumb)">Dumb 💀</span><div class="meter mini" data-pct="96" style="--mc:var(--dumb)"></div><span class="pc" style="color:var(--dumb)">96%</span></div>
-      <div class="cap">/compact now or accept chaos.</div>
+    <div class="session-step">
+      <span class="ss-ctx">~/my-app ⎇ main</span>
+      <span class="ss-label" style="color:var(--cooked)">Cooked</span>
+      <div class="meter session ss-meter" data-pct="78" style="--mc:var(--cooked)"></div>
+      <span class="ss-pct" style="color:var(--cooked)">78%</span>
+      <span class="ss-note">starting to drift. plan your /compact.</span>
+    </div>
+    <div class="session-step">
+      <span class="ss-ctx">~/my-app ⎇ main</span>
+      <span class="ss-label" style="color:var(--dumb)">Dumb 💀</span>
+      <div class="meter session ss-meter" data-pct="96" style="--mc:var(--dumb)"></div>
+      <span class="ss-pct" style="color:var(--dumb)">96%</span>
+      <span class="ss-note">re-inventing APIs. /compact now.</span>
+    </div>
+    <div class="session-step compact-step">
+      <span class="ss-ctx">~/my-app ⎇ main</span>
+      <span class="ss-label" style="color:var(--smart)">Smart</span>
+      <div class="meter session ss-meter" data-pct="8" style="--mc:var(--smart)"></div>
+      <span class="ss-pct" style="color:var(--smart)">8%</span>
+      <span class="ss-note" style="color:#5dff5750">↑ after /compact — fresh context.</span>
     </div>
   </div>
-  <div class="ex-note">↑ that's the whole thing. <b>it lives in your status bar.</b></div>
 </section>
 
 <section class="wrap reveal">
-  <span class="kicker">the problem</span>
+  <span class="section-label">the problem</span>
   <h2>Context rot is real.</h2>
-  <div class="rot">
-    <p>Early in a chat your agent one-shots the function. A few hundred messages later it re-introduces the bug you fixed an hour ago and confidently invents an API. <b>You can't feel it coming</b> — the meter can.</p>
-    <div class="sig mono">// the cure is just <b style="color:var(--acid)">/compact</b>. you just need to know when.</div>
+  <div class="rot-block">
+    <p>Early in a chat your agent one-shots the function. A few hundred messages later it re-introduces the bug you fixed an hour ago and confidently invents an API. You can't feel it coming — the meter can.</p>
+    <div class="sig mono">// the fix is <b>/compact</b>. you just need to know when.</div>
   </div>
 </section>
 
 <section class="wrap reveal">
-  <span class="kicker">the readout</span>
+  <span class="section-label">the readout</span>
   <h2>Five states. One glance.</h2>
-  <p class="lead">There's no "accuracy" sensor — so dumbometer measures the <i>cause</i>: how full the context window is. Empty = sharp. Full = mush. The meter climbs the five levels as you go.</p>
-  <div class="states" style="margin-top:26px">
+  <p class="lead">dumbometer measures the cause: how full the context window is. Empty = sharp. Full = mush.</p>
+  <div class="states">
     <div class="state"><div class="nm" style="color:var(--smart)">Smart</div><div class="rg">0–24%</div><div class="row"><div class="meter mini" data-pct="14" style="--mc:var(--smart)"></div><span class="pc" style="color:var(--smart)">14%</span></div></div>
     <div class="state"><div class="nm" style="color:var(--coasting)">Coasting</div><div class="rg">25–49%</div><div class="row"><div class="meter mini" data-pct="37" style="--mc:var(--coasting)"></div><span class="pc" style="color:var(--coasting)">37%</span></div></div>
     <div class="state"><div class="nm" style="color:var(--foggy)">Foggy</div><div class="rg">50–69%</div><div class="row"><div class="meter mini" data-pct="61" style="--mc:var(--foggy)"></div><span class="pc" style="color:var(--foggy)">61%</span></div></div>
@@ -328,38 +779,45 @@
 </section>
 
 <section class="wrap reveal">
-  <span class="kicker">how it works</span>
-  <h2>How it works.</h2>
+  <span class="section-label">how it works</span>
+  <h2>Simple by design.</h2>
   <p class="lead">Three things, and that's the whole story.</p>
+
   <div class="how">
-    <div><h3>// reads your % locally</h3><p>Pulls the actual context-window percentage straight from Claude Code's status-line data, on your machine. No guessing, no transcript scraping, no network call.</p></div>
-    <div><h3>// zero tokens</h3><p>It reads a number Claude Code already computed — it never calls the model. Runs locally on every render. It will never cost you a cent or a single token of context.</p></div>
-    <div><h3>// never crashes</h3><p>Every failure path falls back to safe output and exits clean. It will never garble your status line. (We have tests. 52 of them.)</p></div>
+    <div class="how-item">
+      <h3>// reads your % locally</h3>
+      <p>Pulls the actual context-window percentage straight from Claude Code's status-line data, on your machine. No guessing, no transcript scraping, no network call.</p>
+    </div>
+    <div class="how-item">
+      <h3>// never crashes</h3>
+      <p>Every failure path falls back to safe output and exits clean. It will never garble your status line. 64 tests.</p>
+    </div>
+    <div class="how-item">
+      <h3>// one file</h3>
+      <p>Zero dependencies. MIT. No account, no telemetry, no config needed. Clone it or install it — works immediately.</p>
+    </div>
+  </div>
+
+  <div class="zerotok-block">
+    <span class="zt-badge">ZERO TOKENS</span>
+    <p class="zt-txt">Reads a number Claude Code already computed — never calls the model. Runs locally on every render. Will never cost you a cent or a single token of context.</p>
   </div>
 </section>
 
-<section class="wrap reveal">
-  <span class="kicker">why it works</span>
-  <h2>Why a fill meter tells you anything.</h2>
-  <p class="lead">It's not a gimmick — it's measuring the actual cause of the dumbness.</p>
-  <div class="why">
-    <p><b>Context rot.</b> As the context window fills, the model has more and more to hold in its head — and it starts losing track of earlier details: the function it wrote, the bug you already fixed, the convention you agreed on twenty messages ago. Quality degrades <i>before</i> you notice it in the output.</p>
-    <p>You can't feel that coming. But the fill level <b>is</b> the warning sign — it climbs in plain sight, and it climbs <i>before</i> the answers go bad. dumbometer just puts that number where you'll actually see it, so <code>/compact</code> stops being a guess.</p>
-  </div>
-</section>
-
-<section class="wrap reveal hair" id="install">
-  <span class="kicker">install</span>
+<section class="wrap reveal tight" id="install">
+  <span class="section-label">install</span>
   <h2>30 seconds. Then forget about it.</h2>
-  <div class="install" style="max-width:620px">
-    <code style="white-space:normal">/plugin marketplace add MaximoCorrea1/dumbometer<br>/plugin install dumbometer<br>/dumbometer:setup</code>
+  <div class="install-block">
+    <code id="cmd">/plugin marketplace add MaximoCorrea1/dumbometer
+/plugin install dumbometer
+/dumbometer:setup</code>
     <button class="copybtn" id="copy2" aria-label="Copy full install">COPY ALL</button>
   </div>
-  <div class="badges mono">free · <span>MIT</span> · zero deps · <span>0 tokens</span> · never crashes — or clone it and <span>claude --plugin-dir .</span></div>
+  <p class="trust-line mono" style="margin-top:16px">free · MIT · zero deps · zero tokens · never crashes</p>
 </section>
 
 <section class="wrap reveal">
-  <span class="kicker">pricing</span>
+  <span class="section-label">pricing</span>
   <h2>Three tiers. Pick the free one.</h2>
   <p class="lead">The product is free and that's the honest answer. The other two exist because we couldn't help ourselves.</p>
   <div class="tiers">
@@ -372,8 +830,8 @@
         <li>The meter — live in your status line.</li>
         <li>All 5 states, from Smart to Dumb.</li>
         <li>Reads your real context-window %.</li>
-        <li>Runs locally · zero tokens · never crashes.</li>
-        <li>MIT licensed. No account, no telemetry.</li>
+        <li>Zero tokens. Runs locally. Never crashes.</li>
+        <li>MIT. No account, no telemetry.</li>
       </ul>
       <a class="tcta" href="#install">Install free →</a>
       <div class="foot">this is everything. you want this one.</div>
@@ -385,14 +843,13 @@
       <div class="tp">$9<small> once</small></div>
       <ul>
         <li>🎨 Extra color themes — vaporwave / matrix / hazard.</li>
-        <li>🔥 Roast Mode — the meter heckles you: <span class="em">"/compact, champ"</span>.</li>
-        <li>🥚 Easter-egg frames — rare <span class="em">galaxy brain 🌌</span> / <span class="em">smoothbrain</span>.</li>
-        <li>🏆 <span class="em">dumb --score</span> — flex your peak dumb score.</li>
-        <li>🔤 Custom labels — rename "Dumb" to your boss's name.</li>
-        <li>🔔 A little sound when you hit Dumb.</li>
+        <li>🔥 Roast Mode — <em>"/compact, champ"</em>.</li>
+        <li>🥚 Rare galaxy brain 🌌 easter-egg frames.</li>
+        <li>🏆 <em>dumb --score</em> — flex your peak dumb score.</li>
+        <li>🔤 Custom labels — rename "Dumb" to anything.</li>
       </ul>
       <a class="tcta" href="https://github.com/MaximoCorrea1/dumbometer">Coming soon — ⭐ star to get notified</a>
-      <div class="foot">a tip jar with perks. you do NOT need it. but it's nine bucks and you'll smile.</div>
+      <div class="foot">a tip jar with perks. you do not need it. but it's nine bucks.</div>
     </div>
 
     <div class="tier joke">
@@ -401,11 +858,11 @@
       <div class="tp">$1M<small> /yr</small></div>
       <ul>
         <li>We fly to your home office.</li>
-        <li>We physically tap your shoulder the moment your context window fills.</li>
+        <li>We physically tap your shoulder when the context fills.</li>
         <li>Weighted blanket included.</li>
       </ul>
       <a class="tcta" href="mailto:maximocorrearosas@gmail.com?subject=Singularity%20tier%20(%241M)&body=I%20would%20like%20to%20discuss%20the%20%241M%20Singularity%20tier.">Contact sales 😉</a>
-      <div class="foot">we will not be doing this. it's a joke. please buy the free one.</div>
+      <div class="foot">we will not be doing this. please buy the free one.</div>
     </div>
   </div>
 </section>
@@ -419,138 +876,170 @@
       <a href="https://github.com/MaximoCorrea1/dumbometer#readme">docs →</a>
       <a href="https://github.com/MaximoCorrea1/dumbometer/blob/main/LICENSE">MIT license</a>
     </div>
-    <div class="score" style="margin-top:26px; opacity:.6">made while watching this exact meter climb to 99%</div>
+    <div class="score" style="margin-top:20px; opacity:.5">made while watching this exact meter climb to 99%</div>
   </div>
 </footer>
 
 <script>
 (function(){
-  var W=document.getElementById('word'), B=document.getElementById('bar'),
-      P=document.getElementById('pct'), S=document.getElementById('skull'),
-      T=document.getElementById('ticker'), DOT=document.getElementById('navdot'),
-      BOX=document.getElementById('meterbox');
-  var CELLS=16;
+  // ---- constants ----
+  var CELLS = 14;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // 5-level ramp: smart -> dumb
+  // ---- element refs ----
+  var W   = document.getElementById('word');
+  var B   = document.getElementById('bar');
+  var P   = document.getElementById('pct');
+  var S   = document.getElementById('skull');
+  var T   = document.getElementById('ticker');
+  var DOT = document.getElementById('navdot');
+  var BOX = document.getElementById('meterbox');
+
+  // ---- eased entrance (data-mounted toggle) ----
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      document.body.setAttribute('data-mounted', '');
+    });
+  });
+
+  // ---- helpers ----
   function stateFor(p){
-    if(p>=90) return {w:'Dumb',     c:'var(--dumb)',     skull:true};
-    if(p>=70) return {w:'Cooked',   c:'var(--cooked)'};
-    if(p>=50) return {w:'Foggy',    c:'var(--foggy)'};
-    if(p>=25) return {w:'Coasting', c:'var(--coasting)'};
-    return            {w:'Smart',    c:'var(--smart)'};
+    if(p >= 90) return { w: 'Dumb',     c: 'var(--dumb)',     skull: true  };
+    if(p >= 70) return { w: 'Cooked',   c: 'var(--cooked)',   skull: false };
+    if(p >= 50) return { w: 'Foggy',    c: 'var(--foggy)',    skull: false };
+    if(p >= 25) return { w: 'Coasting', c: 'var(--coasting)', skull: false };
+    return              { w: 'Smart',   c: 'var(--smart)',    skull: false };
   }
 
-  // build a fixed grid of equal cells once
   function buildCells(el, n){
-    el.innerHTML='';
-    for(var i=0;i<n;i++){ var c=document.createElement('span'); c.className='cell'; el.appendChild(c); }
-  }
-  // fill the first `filled` cells of a meter element
-  function fillCells(el, filled, n){
-    var kids=el.children;
-    for(var i=0;i<n;i++){
-      if(i<filled) kids[i].classList.add('fill'); else kids[i].classList.remove('fill');
+    el.innerHTML = '';
+    for(var i = 0; i < n; i++){
+      var c = document.createElement('span');
+      c.className = 'cell';
+      el.appendChild(c);
     }
   }
 
-  // build + paint all the static mini meters on the page
+  function fillCells(el, filled, n){
+    var kids = el.children;
+    for(var i = 0; i < n; i++){
+      if(i < filled) kids[i].classList.add('fill');
+      else           kids[i].classList.remove('fill');
+    }
+  }
+
+  // paint all static mini + session meters
   function paintStatic(){
-    document.querySelectorAll('.meter.mini').forEach(function(el){
-      var n=CELLS, pct=parseFloat(el.getAttribute('data-pct'))||0;
-      buildCells(el,n);
-      fillCells(el, Math.max(0,Math.min(n,Math.round(pct/100*n))), n);
+    document.querySelectorAll('.meter.mini, .meter.session').forEach(function(el){
+      var pct = parseFloat(el.getAttribute('data-pct')) || 0;
+      buildCells(el, CELLS);
+      fillCells(el, Math.max(0, Math.min(CELLS, Math.round(pct / 100 * CELLS))), CELLS);
     });
   }
 
   // ---- hero meter ----
   buildCells(B, CELLS);
-  var galaxy=false; // easter-egg low-end frame this cycle
-  var forced=false; // click-to-spike lock
-
-  function paint(p){
-    var st=stateFor(p);
-    var filled=Math.max(0,Math.min(CELLS,Math.round(p/100*CELLS)));
-    var label = st.w;
-    // rare galaxy-brain frame at the very low end (only when not Dumb/forced)
-    if(galaxy && p<25){ label='🌌 galaxy brain'; }
-    W.textContent=label;
-    P.textContent=p+'%';
-    W.style.color=st.c; P.style.color=st.c;
-    B.style.setProperty('--mc', st.c);
-    fillCells(B, filled, CELLS);
-    if(DOT){ DOT.style.background=st.c; DOT.style.boxShadow='0 0 12px '+st.c; }
-    S.style.opacity = st.skull ? '1':'0';
-  }
-
-  var tickers=['› parsing a 2,000-line file…','› "remind me what we were doing"','› re-reading the whole repo, again','› inventing an API that does not exist','› forgetting the function from 3 messages ago'];
-
-  // build statics regardless of motion pref
   paintStatic();
 
+  var galaxy = false;
+  var forced = false;
+
+  function paint(p){
+    var st = stateFor(p);
+    var filled = Math.max(0, Math.min(CELLS, Math.round(p / 100 * CELLS)));
+    var label = st.w;
+    if(galaxy && p < 25){ label = '🌌 galaxy brain'; }
+    W.textContent = label;
+    P.textContent = p + '%';
+    W.style.color = st.c;
+    P.style.color = st.c;
+    B.style.setProperty('--mc', st.c);
+    fillCells(B, filled, CELLS);
+    if(DOT){ DOT.style.background = st.c; DOT.style.boxShadow = '0 0 10px ' + st.c; }
+    S.style.opacity = st.skull ? '1' : '0';
+  }
+
+  var tickers = [
+    '› parsing a 2,000-line file…',
+    '› "remind me what we were doing"',
+    '› re-reading the whole repo, again',
+    '› inventing an API that does not exist',
+    '› forgetting the function from 3 messages ago'
+  ];
+
   if(reduce){
-    paint(82); // a representative "Cooked" frame, no animation
-    T.innerHTML='› <b>Cooked</b> — reduced-motion mode';
+    paint(78);
+    T.innerHTML = '› <b>Cooked</b> — reduced-motion mode';
   } else {
-    var p=4, ti=0;
-    galaxy = Math.random()<0.05;
+    var p = 4, ti = 0;
+    galaxy = Math.random() < 0.05;
     paint(p);
+
     function loop(){
-      if(forced){ setTimeout(loop, 300); return; } // paused during click-spike
-      p += Math.random()<0.25 ? 2 : (3+Math.floor(Math.random()*5));
-      if(p>=100){
-        p=100; paint(p);
-        T.innerHTML='› <b>/compact</b> — flushing the rot…';
+      if(forced){ setTimeout(loop, 300); return; }
+      // pace: slower, more realistic — 600–900ms per tick
+      p += Math.random() < 0.25 ? 1 : (2 + Math.floor(Math.random() * 3));
+      if(p >= 100){
+        p = 100; paint(p);
+        T.innerHTML = '› <b>/compact</b> — flushing the rot…';
         setTimeout(function(){
-          if(forced){ setTimeout(loop,300); return; }
-          galaxy = Math.random()<0.05;       // re-roll the easter egg each cycle
-          p=3+Math.floor(Math.random()*6); paint(p);
+          if(forced){ setTimeout(loop, 300); return; }
+          galaxy = Math.random() < 0.05;
+          p = 3 + Math.floor(Math.random() * 5);
+          paint(p);
           T.textContent = galaxy ? '› fresh session. 🌌 galaxy brain online.' : '› fresh session. context flushed.';
-          setTimeout(loop, 1100);
-        }, 1300);
+          setTimeout(loop, 1200);
+        }, 1600);
         return;
       }
       paint(p);
-      if(p>30 && p<92 && Math.random()<0.4){ T.textContent=tickers[ti++ % tickers.length]; }
-      setTimeout(loop, 380 + Math.random()*220);
+      if(p > 30 && p < 92 && Math.random() < 0.35){ T.textContent = tickers[ti++ % tickers.length]; }
+      setTimeout(loop, 600 + Math.random() * 300);
     }
-    setTimeout(loop, 700);
+    setTimeout(loop, 800);
 
-    // ---- easter egg: click the meter -> spike to Dumb 99%, then reset ----
+    // easter egg: click → spike to Dumb, then reset
     function spike(){
       if(forced) return;
-      forced=true;
-      galaxy=false;
+      forced = true;
+      galaxy = false;
       paint(99);
-      S.style.opacity='1';
-      T.innerHTML='› <b>💀 maxed out.</b> /compact, champ.';
+      S.style.opacity = '1';
+      T.innerHTML = '› <b>💀 maxed out.</b> /compact, champ.';
       setTimeout(function(){
-        p=4; galaxy = Math.random()<0.05; paint(p);
-        T.textContent='› reset. (you did that on purpose.)';
-        forced=false;
-      }, 1400);
+        p = 4;
+        galaxy = Math.random() < 0.05;
+        paint(p);
+        T.textContent = '› reset. (you did that on purpose.)';
+        forced = false;
+      }, 1600);
     }
     BOX.addEventListener('click', spike);
     BOX.addEventListener('keydown', function(e){
-      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); spike(); }
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); spike(); }
     });
   }
 
-  // copy buttons
-  function wire(btnId, text){
-    var b=document.getElementById(btnId); if(!b) return;
-    b.addEventListener('click', function(){
-      navigator.clipboard && navigator.clipboard.writeText(text).then(function(){
-        var o=b.textContent; b.textContent='COPIED ✓'; setTimeout(function(){b.textContent=o;},1400);
-      }).catch(function(){});
+  // copy button
+  var copy2 = document.getElementById('copy2');
+  if(copy2){
+    copy2.addEventListener('click', function(){
+      var text = '/plugin marketplace add MaximoCorrea1/dumbometer\n/plugin install dumbometer\n/dumbometer:setup';
+      if(navigator.clipboard){
+        navigator.clipboard.writeText(text).then(function(){
+          var o = copy2.textContent;
+          copy2.textContent = 'COPIED ✓';
+          setTimeout(function(){ copy2.textContent = o; }, 1400);
+        }).catch(function(){});
+      }
     });
   }
-  wire('copy','/plugin marketplace add MaximoCorrea1/dumbometer');
-  wire('copy2','/plugin marketplace add MaximoCorrea1/dumbometer\n/plugin install dumbometer\n/dumbometer:setup');
 
   // scroll reveal
-  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.12});
-  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
 })();
 </script>
 </body>
