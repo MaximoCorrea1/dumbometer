@@ -172,6 +172,18 @@ touch .nojekyll
 
 Commit it. Pages will then serve files as-is (static pass-through). This is especially easy to miss on plugin repos where the markdown is documentation for the plugin, not a Jekyll site.
 
+---
+
+### 6. Runtime config reaches a statusLine plugin only through environment variables
+
+The statusLine command runs non-interactively on every render (JSON on stdin, no TTY, no flags), so the only channel for per-user configuration is **environment variables** the plugin reads from `process.env` (dumbometer uses `DUMBOMETER_THEME`, `DUMBOMETER_ROAST`, `DUMBOMETER_WIDTH`, ...). Claude Code spawns the command as a child process, so it inherits Claude Code's environment.
+
+Set config persistently:
+- macOS/Linux: export in your shell profile (`~/.zshrc`, `~/.bashrc`), then restart Claude Code.
+- Windows: `setx DUMBOMETER_THEME matrix`, then restart Claude Code.
+
+**Gotcha:** `setx` and profile exports only affect processes started *after* they run, so a Claude Code session that is already open will not see the new value. Start a fresh session (or terminal) for the statusLine to pick it up. Do not try to bake `VAR=value` into the `settings.json` statusLine command string: that syntax is shell-specific (POSIX `VAR=val cmd` vs Windows) and not portable. Environment plus restart is the reliable path.
+
 ## Why This Matters
 
 Each constraint caused a real failure or unexpected rework:
