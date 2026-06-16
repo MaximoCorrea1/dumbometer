@@ -1,6 +1,6 @@
 // Pure config: defaults + environment overrides.
 export const DEFAULTS = {
-  width: 10,
+  width: 14,
   color: true,
   levels: [
     { name: 'Smart',    min: 0,  color: 46  },

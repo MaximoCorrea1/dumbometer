@@ -30,7 +30,7 @@ stdin JSON ─▶ parse() ─▶ {usedPct, windowSize, model, cold}
                               │
                      computeState() ─▶ {label, color}
                               │
-              render() + colorize() ─▶ "Cooked   ████████░░ 79%" ─▶ stdout (exit 0)
+              render() + colorize() ─▶ "Cooked   ███████████░░░ 79%" ─▶ stdout (exit 0)
 ```
 
 ## Components
@@ -67,13 +67,13 @@ Pure; levels (names, mins, color codes) come from `config.levels`.
 
 ### `render(reading, state, config, columns) → string`
 Builds `"<word> <bar> <pct>%"`:
-- Bar: `width` cells (default 10); filled = `round(usedPct/100 * width)` using
+- Bar: `width` cells (default 14); filled = `round(usedPct/100 * width)` using
   `█` / `░`.
 - **Stable columns:** the word is right-padded to the widest label width
   (8 = "Coasting") so the bar never shifts horizontally as the word changes — no jitter.
 - **Width-adaptive:** if `$COLUMNS` is narrow, shrink the bar, then drop the word,
   then drop the bar — degrade gracefully down to just `NN%`.
-- **Cold state:** render a muted `Smart    ░░░░░░░░░░ …` (full muted bar + ellipsis, no
+- **Cold state:** render a muted `Smart    ░░░░░░░░░░░░░░ …` (full muted bar + ellipsis, no
   number) rather than a misleading reading.
 
 ### `colorize(text, color, config) → string`
@@ -93,7 +93,7 @@ Zero-config by default. Optional overrides via environment variables
 
 | Var | Effect | Default |
 |-----|--------|---------|
-| `DUMBOMETER_WIDTH` | bar cells | `10` |
+| `DUMBOMETER_WIDTH` | bar cells | `14` |
 | `DUMBOMETER_THRESHOLDS` | 4 ascending ints (1–99): start % for Coasting,Foggy,Cooked,Dumb | `25,50,70,90` |
 | `DUMBOMETER_LABELS` | 5 comma-separated words (Smart through Dumb) | `Smart,Coasting,Foggy,Cooked,Dumb` |
 | `DUMBOMETER_NO_COLOR` / `NO_COLOR` | disable color | unset |

@@ -4,7 +4,7 @@ import { loadConfig, DEFAULTS } from '../src/config.js';
 
 test('defaults when env is empty', () => {
   const c = loadConfig({});
-  assert.equal(c.width, 10);
+  assert.equal(c.width, 14);
   assert.equal(c.color, true);
   assert.equal(c.levels.length, 5);
   assert.deepEqual(c.levels[0], { name: 'Smart',    min: 0,  color: 46  });
@@ -15,7 +15,7 @@ test('defaults when env is empty', () => {
 });
 
 test('DEFAULTS shape', () => {
-  assert.equal(DEFAULTS.width, 10);
+  assert.equal(DEFAULTS.width, 14);
   assert.equal(DEFAULTS.color, true);
   assert.equal(DEFAULTS.levels.length, 5);
   assert.equal(DEFAULTS.levels[0].name, 'Smart');
@@ -27,8 +27,8 @@ test('valid width override', () => {
 });
 
 test('invalid width falls back to default', () => {
-  assert.equal(loadConfig({ DUMBOMETER_WIDTH: 'abc' }).width, 10);
-  assert.equal(loadConfig({ DUMBOMETER_WIDTH: '0' }).width, 10);
+  assert.equal(loadConfig({ DUMBOMETER_WIDTH: 'abc' }).width, 14);
+  assert.equal(loadConfig({ DUMBOMETER_WIDTH: '0' }).width, 14);
 });
 
 test('valid thresholds override (4 ascending ints 1–99)', () => {

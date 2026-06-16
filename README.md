@@ -3,7 +3,7 @@
 A Claude Code status-line gauge showing Smart→Dumb as the context window fills.
 
 ```
-Cooked   ████████░░ 79%
+Cooked   ███████████░░░ 79%
 ```
 
 ## What it shows
@@ -61,7 +61,7 @@ Zero-config by default. Override with environment variables (set inside the
 
 | Variable | Effect | Default |
 |---|---|---|
-| `DUMBOMETER_WIDTH` | Bar width in cells | `10` |
+| `DUMBOMETER_WIDTH` | Bar width in cells | `14` |
 | `DUMBOMETER_THRESHOLDS` | 4 ascending ints (1–99): start % for Coasting,Foggy,Cooked,Dumb | `25,50,70,90` |
 | `DUMBOMETER_LABELS` | 5 comma-separated label words | `Smart,Coasting,Foggy,Cooked,Dumb` |
 | `DUMBOMETER_NO_COLOR` / `NO_COLOR` | Disable ANSI color | unset |

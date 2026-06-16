@@ -17,7 +17,7 @@ test('renders a line from a real-ish payload', () => {
 
 test('exits 0 (never crashes) on garbage — execFileSync throws on non-zero exit', () => {
   const out = run('totally not json {{{');
-  assert.equal(out, 'Smart    ░░░░░░░░░░ …');
+  assert.equal(out, 'Smart    ░░░░░░░░░░░░░░ …');
 });
 
 // Regression: EPIPE must not crash the status line (exit must be 0, no stack trace on stderr)
