@@ -12,15 +12,15 @@ You are picking up a redesign mid-stream. dumbometer is a shipped Claude Code pl
 4. The user provides at deploy time: the domain (DNS to Vercel), `POLAR_ACCESS_TOKEN` + `POLAR_SUCCESS_URL` (Vercel env vars, never commit), and any more screenshots.
 5. Polar product id: `843fdc28-55e3-43d5-9924-2af444e412f4`.
 
-Design law: dark candy-neon, mascot-led, examples everywhere, no em-dashes.
+Design law: brutalist-candy. Canonical brand + design system: `brand/BRAND.md` + `brand/DESIGN.md` (read these first; they win on any conflict). Mascot-led, examples everywhere, no em-dashes.
 
-**Goal:** Ship the redesigned dumbometer marketing site: a dark, candy-neon, mascot-led, example-heavy Next.js landing on Vercel at a custom domain, with a working $9 Polar checkout.
+**Goal:** Ship the redesigned dumbometer marketing site: a dark, brutalist-candy, mascot-led, example-heavy Next.js landing on Vercel at a custom domain, with a working $9 Polar checkout.
 
 **Architecture:** Next.js (App Router, TypeScript) marketing site, mostly static, plus ONE server route for Polar checkout (keeps the access token server-side). Deployed on Vercel from new repo `DumboMeter/site`. Custom domain (user buys it).
 
 **Stack:** Next.js 15 (App Router), React, TypeScript, plain CSS (CSS variables + CSS Modules, no Tailwind), `next/font`, `@polar-sh/nextjs` for checkout. No heavy UI libs.
 
-**Design law (non-negotiable):** dark base `#0E0E12`; candy-neon palette; bold chunky display + clean mono; symmetric, generously spaced, high-contrast; glow accents; ONE orchestrated entrance, restrained motion, `prefers-reduced-motion` respected. NO em-dashes in any copy. Examples everywhere. The rounded mascot is the brand.
+**Design law (non-negotiable, canonical in `brand/DESIGN.md`):** brutalist-candy. Dark base `#0a0b0d`; hard offset shadows (`6px 6px 0`) + sharp 2px borders + film grain; candy-neon accents (`--acid` signature, plus pink/cyan/grape) layered on the reserved Smart->Dumb state ramp; bold Bricolage Grotesque + JetBrains Mono; symmetric, generously spaced, high contrast. The state ramp is for the meter and state semantics ONLY; candy is accent, never wallpaper (color = SIGNAL). ONE orchestrated entrance, restrained motion, `prefers-reduced-motion` respected. NO em-dashes in any copy. Examples everywhere. The derpy gauge-face mascot is the brand.
 
 ## Assets
 - `brand/` and `example screenshots/` in the current repo. Copy into the new site's `public/`.
@@ -29,16 +29,24 @@ Design law: dark candy-neon, mascot-led, examples everywhere, no em-dashes.
 - Screenshots (real renders): `Coasting 35%` ("ship the rate limiter", green), `Foggy 54%` ("build gta vi", yellow). Used in the example sections. More to come.
 
 ## Design tokens (`app/globals.css`)
+
+Canonical source: **`brand/DESIGN.md`** (this refines the earlier draft; on any conflict, `brand/DESIGN.md` wins). Copy verbatim:
 ```css
 :root{
-  --bg:#0E0E12; --panel:#16161D; --ink:#FFFFFF; --muted:#A7A7B4;
-  --smart:#3DF5A0; --coasting:#9BE64B; --foggy:#FFE14D; --cooked:#FF9F45; --dumb:#FF3D6E;
-  --candy-pink:#FF4FD8; --candy-cyan:#3DCFFF; --grape:#9B5CFF;
-  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  /* base */
+  --bg:#0a0b0d; --panel:#101216; --ink:#f3f1e9; --dim:#9a9c96; --line:#ffffff14;
+  /* state ramp -> meter + state semantics ONLY */
+  --smart:#5dff57; --coasting:#9be34a; --foggy:#ffd23f; --cooked:#ff7a1e; --dumb:#ff2e2e;
+  /* candy accents -> CTAs, mascot ring, eyebrows, hovers, links */
+  --acid:#c6ff3a; --pink:#ff4fd8; --cyan:#3dcfff; --grape:#9b5cff;
+  /* brutalist motifs */
+  --shadow:6px 6px 0 0 var(--ink); --shadow-candy:3px 3px 0 0 var(--acid); --border:2px solid var(--ink);
+  /* motion + layout */
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --maxw:1120px;
 }
-/* glow util: box-shadow:0 0 24px -6px <candy>; text glow for the wordmark */
+/* glow util: box-shadow:0 0 24px -6px <candy>. film grain: fixed overlay, repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px), opacity .04, mix-blend overlay */
 ```
-Fonts via `next/font`: a chunky grotesque display (e.g. Bricolage Grotesque / Clash) + JetBrains Mono for renders.
+Fonts via `next/font`: Bricolage Grotesque (display, 600+800) + JetBrains Mono (500+700) for renders/mono.
 
 ## File structure
 ```
@@ -58,12 +66,13 @@ public/                 # logo, icon, screenshots, og image
 - [ ] Create `DumboMeter/site` (gh repo create, private first).
 - [ ] `create-next-app` (App Router, TS, no Tailwind). Add `next/font`, base `layout.tsx` (metadata: title, description, favicon from icon.ico, OG), commit + push.
 
-### Task 2: Candy-neon design system
-- [ ] `globals.css` with tokens above + reset + `.glow` utilities + section rhythm (symmetric max-width container, generous vertical spacing).
-- [ ] Circular mascot badge component (logo via `border-radius:50%`, neon ring glow).
+### Task 2: Brutalist-candy design system
+- [ ] `globals.css` with the canonical tokens above + reset + `.glow` + `--shadow`/`--border` brutalist utilities + film-grain overlay + section rhythm (symmetric max-width container, generous vertical spacing; spacing scale per `brand/DESIGN.md`).
+- [ ] Brutalist button + card patterns per `brand/DESIGN.md` (hard offset shadow, hover shadow-nudge `translate(-2,-2)`, `:active` `scale(0.97)`).
+- [ ] Circular mascot badge component (logo via `border-radius:50%`, candy neon ring glow). Mascot asset note: `logo.png` has a white background, so the badge reads as a white "sticker" disc on the dark page (on-brand for brutalist-candy). If a background-less mascot is wanted instead, produce a transparent/dark-matted cut at build time (no ImageMagick/Pillow on the machine, so do it via an in-browser canvas export or a transparent re-export).
 
 ### Task 3: Live meter component (`components/Meter.tsx`)
-- [ ] Port the segmented animated meter from the current `index.html` to React: 14 cells, candy-neon fills + glow, autoplay climb (Smart -> Dumb -> reset) + click-to-spike, reduced-motion static state. Props for label/pct/theme.
+- [ ] Port the segmented animated meter from the current `index.html` to React: 14 cells, state-ramp fills (`--smart`..`--dumb`, never candy accents) + glow, identical fill/empty box model (no partial-fill jitter), autoplay climb (Smart -> Dumb -> reset) + click-to-spike, reduced-motion static state. Props for label/pct/theme.
 
 ### Task 4: Hero
 - [ ] Mascot badge + chunky candy wordmark "dumbometer". H1: "Know when your AI gets dumb." One-sentence subhead (what it is + the one action). `<Meter/>` centerpiece (glowing). Copyable install one-liner. "Get it free →" candy-pink CTA. Trust line: `free · MIT · zero tokens · never crashes`. Staggered entrance via a mounted flag.
